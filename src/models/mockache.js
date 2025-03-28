@@ -52,7 +52,7 @@ ${this.#prompt}
 ${inputJSONString}
 
  * ExampleOutput:
-$${exampleOutputJSONSTring}`;
+${exampleOutputJSONSTring}`;
 
         const messages = [
             {

@@ -37,34 +37,36 @@ echo "Totalt antal tester: $total"
 echo "Lyckade tester: $passed"
 echo "Misslyckade tester: $failed"
 echo ""
-echo "Detaljerad rapport:"
 
 # Extrahera och formatera varje testresultat
-echo "$result" | grep -o '"results":\[.*\]' | cut -d'[' -f2 | cut -d']' -f1 | tr ',' '\n' | while read -r line; do
-    if [[ $line =~ \"input\":\{(.*?)\} ]]; then
-        input="${BASH_REMATCH[1]}"
-        echo "Test:"
-        echo "  Indata: {$input}"
-        
-        if [[ $line =~ \"expectedOutput\":\{(.*?)\} ]]; then
-            expected="${BASH_REMATCH[1]}"
-            echo "  Förväntad utdata: {$expected}"
-        fi
-        
-        if [[ $line =~ \"actualOutput\":\{(.*?)\} ]]; then
-            actual="${BASH_REMATCH[1]}"
-            echo "  Faktisk utdata: {$actual}"
-        fi
-        
-        if [[ $line =~ \"success\":(true|false) ]]; then
-            success="${BASH_REMATCH[1]}"
-            if [ "$success" = "true" ]; then
-                echo -e "  Status: ${GREEN}✓ Lyckades${NC}"
-            else
-                echo -e "  Status: ${RED}✗ Misslyckades${NC}"
+echo "$result" | grep -o '"results":\[.*\]' | cut -d'[' -f2 | cut -d']' -f1 | sed 's/},{/\n/g' | while read -r line; do
+    # Extrahera status först
+    if [[ $line =~ \"success\":(true|false) ]]; then
+        success="${BASH_REMATCH[1]}"
+        if [ "$success" = "true" ]; then
+            echo -e "${GREEN}✓ Test lyckades${NC}"
+        else
+            echo -e "${RED}✗ Test misslyckades${NC}"
+            
+            # Extrahera och visa input
+            if [[ $line =~ \"input\":\{([^}]*)\} ]]; then
+                input="${BASH_REMATCH[1]}"
+                echo "  Input: {$input}"
             fi
+            
+            # Extrahera och visa förväntad utdata
+            if [[ $line =~ \"expectedOutput\":\{([^}]*)\} ]]; then
+                expected="${BASH_REMATCH[1]}"
+                echo "  Expected: {$expected}"
+            fi
+            
+            # Extrahera och visa faktisk utdata
+            if [[ $line =~ \"actualOutput\":\{([^}]*)\} ]]; then
+                actual="${BASH_REMATCH[1]}"
+                echo "  Received: {$actual}"
+            fi
+            echo ""
         fi
-        echo ""
     fi
 done
 

@@ -49,8 +49,8 @@ ehthumbs.db
 Thumbs.db
 
 # Ignorera alla filer i functions-mappen utom keep-filen
-functions/*
-!functions/keep
+data/functions/*
+!data/functions/keep
 
 # Temporary files
 tmp/

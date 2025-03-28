@@ -56,6 +56,31 @@ class LLMFunction {
         return ret
     }
 
+    improvePrompt(mockache) {
+        //run all examples
+        const results = await this.runAllExamples(mockache);
+        //ask mockache to improve prompt
+
+        const prompt_engineer_prompt = `
+        You are a prompt engineer.
+        You are given a prompt and a list of examples.
+        You are to improve the prompt to be more accurate and to cover all the test results.
+        `
+
+        const input = {
+            old_prompt: this.initialPrompt,
+            test_results: results
+        }
+
+        const exampleOutput = {
+            prompt: "The new prompt should be here",
+        }
+        const improvedPrompt = mockache.gpt4SingleMessage(prompt_engineer_prompt, input, exampleOutput);
+        //set prompt to improved prompt
+        this.prompt = improvedPrompt;
+        this.identifier = this.#generateIdentifier();
+    }
+
     async runAllExamples(mockache) {
         const results = [];
         for (const example of this.examples) {
