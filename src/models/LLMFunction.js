@@ -56,7 +56,7 @@ class LLMFunction {
         return ret
     }
 
-    improvePrompt(mockache) {
+    async improvePrompt(mockache) {
         //run all examples
         const results = await this.runAllExamples(mockache);
         //ask mockache to improve prompt
@@ -75,9 +75,11 @@ class LLMFunction {
         const exampleOutput = {
             prompt: "The new prompt should be here",
         }
-        const improvedPrompt = mockache.gpt4SingleMessage(prompt_engineer_prompt, input, exampleOutput);
+        const improvedPrompt = await mockache.gpt4SingleMessage(prompt_engineer_prompt, input, exampleOutput);
         //set prompt to improved prompt
         this.prompt = improvedPrompt;
+
+        console.log("Improved prompt: " + improvedPrompt);
         this.identifier = this.#generateIdentifier();
     }
 

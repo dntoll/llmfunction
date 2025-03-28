@@ -92,6 +92,29 @@ class APIController {
         const llmFunction = LLMFunction.fromJSON(data);
         return llmFunction.runAllExamples(this.mockache);
     }
+
+    async improveFunction(identifier) {
+        if (!this.initialized) await this.initialize();
+        
+        if (!this.mockache) {
+            throw new FunctionExecutionError('Mockache är inte initialiserad');
+        }
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+        const llmFunction = LLMFunction.fromJSON(data);
+        await llmFunction.improvePrompt(this.mockache);
+        
+        // Spara den uppdaterade funktionen
+        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        
+        return {
+            message: 'Prompt förbättrad',
+            newPrompt: llmFunction.prompt
+        };
+    }
 }
 
 module.exports = APIController; 
