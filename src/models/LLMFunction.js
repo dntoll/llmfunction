@@ -3,7 +3,8 @@ const crypto = require('crypto');
 class LLMFunction {
 
 
-    constructor(prompt, exampleOutput, examples) {
+    constructor(prompt, initialPrompt, exampleOutput, examples) {
+        this.initialPrompt = initialPrompt;
         this.prompt = prompt;
         this.exampleOutput = exampleOutput;
         this.examples = examples;
@@ -14,7 +15,7 @@ class LLMFunction {
         if (!LLMFunction.validate(data)) {
             throw new Error('Ogiltig data för LLMFunction');
         }
-        return new LLMFunction(data.prompt, data.exampleOutput, data.examples);
+        return new LLMFunction(data.prompt, data.initialPrompt,  data.exampleOutput, data.examples);
     }
 
     static validate(data) {

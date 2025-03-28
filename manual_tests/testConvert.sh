@@ -14,16 +14,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Kontrollera om jq är installerat
-if ! command -v jq &> /dev/null; then
-    echo -e "${YELLOW}Varning: jq är inte installerat. Installera jq för bättre formatering av resultatet.${NC}"
-    echo -e "Du kan installera jq med:"
-    echo -e "  Windows (med chocolatey): choco install jq"
-    echo -e "  Linux: sudo apt-get install jq"
-    echo -e "  macOS: brew install jq"
-    echo -e ""
-fi
-
 # Hämta funktionen
 echo -e "${YELLOW}Kör tester för funktion med identifier: $1${NC}"
 echo -e "----------------------------------------"
