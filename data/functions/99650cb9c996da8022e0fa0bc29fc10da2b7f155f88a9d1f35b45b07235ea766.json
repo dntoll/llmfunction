@@ -1,0 +1,16 @@
+{
+  "prompt": "Test prompt 2",
+  "exampleInput": {
+    "test": "data2"
+  },
+  "examples": [
+    {
+      "input": {
+        "test": "data2"
+      },
+      "output": {
+        "result": "data2"
+      }
+    }
+  ]
+}
