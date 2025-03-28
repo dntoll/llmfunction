@@ -7,10 +7,39 @@ const path = require('path');
 // Hjälpfunktion för att rensa testdata
 async function cleanupTestData() {
     try {
-        await fs.rm(path.join('data', 'functions'), { recursive: true, force: true });
-        await fs.rm(path.join('data', 'index.json'), { force: true });
+        // Ladda index-filen
+        const indexPath = path.join('data', 'index.json');
+        let index = {};
+        try {
+            const indexData = await fs.readFile(indexPath, 'utf8');
+            index = JSON.parse(indexData);
+        } catch (error) {
+            // Om index-filen inte finns, inget att rensa
+            return;
+        }
+
+        // Ta bort alla funktioner som skapades under testerna
+        const testIdentifiers = Object.keys(index);
+        for (const identifier of testIdentifiers) {
+            const functionPath = path.join('data', 'functions', `${identifier}.json`);
+            try {
+                await fs.unlink(functionPath);
+            } catch (error) {
+                // Ignorera fel om filen inte finns
+            }
+            delete index[identifier];
+        }
+
+        // Spara uppdaterat index
+        await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+
+        // Verifiera att alla funktioner är borta
+        const remainingFunctions = Object.keys(index);
+        if (remainingFunctions.length > 0) {
+            console.warn('Varning: Några funktioner kunde inte rensas:', remainingFunctions);
+        }
     } catch (error) {
-        // Ignorera fel om filen inte finns
+        console.error('Fel vid rensning av testdata:', error);
     }
 }
 
@@ -68,6 +97,10 @@ describe('POST /llmfunction/create', () => {
     beforeEach(async () => {
         await cleanupTestData();
         app = await createTestApp();
+    });
+
+    afterEach(async () => {
+        await cleanupTestData();
     });
 
     test('skapar en funktion med giltig data', async () => {
@@ -154,6 +187,10 @@ describe('GET /llmfunction/get/:identifier', () => {
         testIdentifier = createResponse.body.identifier;
     });
 
+    afterEach(async () => {
+        await cleanupTestData();
+    });
+
     test('hämtar en existerande funktion', async () => {
         const response = await request(app)
             .get(`/llmfunction/get/${testIdentifier}`);
@@ -195,6 +232,10 @@ describe('DELETE /llmfunction/remove/:identifier', () => {
         testIdentifier = createResponse.body.identifier;
     });
 
+    afterEach(async () => {
+        await cleanupTestData();
+    });
+
     test('tar bort en existerande funktion', async () => {
         const response = await request(app)
             .delete(`/llmfunction/remove/${testIdentifier}`);
@@ -226,6 +267,10 @@ describe('GET /llmfunction/list', () => {
     beforeEach(async () => {
         await cleanupTestData();
         app = await createTestApp();
+    });
+
+    afterEach(async () => {
+        await cleanupTestData();
     });
 
     test('listar alla funktioner', async () => {
@@ -281,6 +326,10 @@ describe('APIController', () => {
         await cleanupTestData();
         controller = new APIController();
         await controller.initialize();
+    });
+
+    afterEach(async () => {
+        await cleanupTestData();
     });
 
     test('skapar en funktion med giltig data', async () => {

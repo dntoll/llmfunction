@@ -8,13 +8,36 @@ class LLMFunction {
         this.identifier = this.generateIdentifier();
     }
 
+    static fromJSON(data) {
+        if (!LLMFunction.validate(data)) {
+            throw new Error('Ogiltig data för LLMFunction');
+        }
+        return new LLMFunction(data.prompt, data.exampleInput, data.examples);
+    }
+
+    static validate(data) {
+        return (
+            data &&
+            typeof data.prompt === 'string' &&
+            data.exampleInput &&
+            Array.isArray(data.examples) &&
+            data.examples.length > 0 &&
+            data.examples.every(example => 
+                example.input && 
+                example.output &&
+                typeof example.input === 'object' &&
+                typeof example.output === 'object'
+            )
+        );
+    }
+
     generateIdentifier() {
-        const jsonString = JSON.stringify({
+        const data = JSON.stringify({
             prompt: this.prompt,
             exampleInput: this.exampleInput,
             examples: this.examples
         });
-        return crypto.createHash('sha256').update(jsonString).digest('hex');
+        return crypto.createHash('sha256').update(data).digest('hex');
     }
 
     toJSON() {
@@ -23,25 +46,6 @@ class LLMFunction {
             exampleInput: this.exampleInput,
             examples: this.examples
         };
-    }
-
-    static fromJSON(json) {
-        return new LLMFunction(json.prompt, json.exampleInput, json.examples);
-    }
-
-    static validate(json) {
-        // Kontrollera att alla obligatoriska fält finns och har rätt typ
-        if (!json.prompt || typeof json.prompt !== 'string') return false;
-        if (!json.exampleInput || typeof json.exampleInput !== 'object') return false;
-        if (!Array.isArray(json.examples) || json.examples.length === 0) return false;
-
-        // Kontrollera att varje exempel har input och output
-        return json.examples.every(example => 
-            example && 
-            typeof example === 'object' && 
-            'input' in example && 
-            'output' in example
-        );
     }
 }
 

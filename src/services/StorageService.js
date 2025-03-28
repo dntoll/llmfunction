@@ -55,7 +55,8 @@ class StorageService {
         const index = await this.loadIndex();
         index[identifier] = {
             prompt: data.prompt,
-            lastModified: new Date().toISOString()
+            lastModified: new Date().toISOString(),
+            isTest: identifier.startsWith('test_')
         };
         await this.saveIndex(index);
     }
@@ -91,11 +92,13 @@ class StorageService {
 
     async listFunctions() {
         const index = await this.loadIndex();
-        return Object.entries(index).map(([identifier, data]) => ({
-            identifier,
-            prompt: data.prompt,
-            lastModified: data.lastModified
-        }));
+        return Object.entries(index)
+            .filter(([identifier]) => !identifier.startsWith('test_'))
+            .map(([identifier, data]) => ({
+                identifier,
+                prompt: data.prompt,
+                lastModified: data.lastModified
+            }));
     }
 }
 
