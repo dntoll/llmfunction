@@ -6,9 +6,9 @@ echo "Skapar en funktion för att konvertera temperatur från Celsius till Fahre
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Konvertera temperatur från Celsius till Fahrenheit",
-    "exampleInput": {
-        "celsius": 0
+    "prompt": "Konvertera Celsius till Fahrenheit",
+    "exampleOutput": {
+        "fahrenheit": 32
     },
     "examples": [
         {
@@ -17,7 +17,7 @@ curl -s -X POST \
         },
         {
             "input": { "celsius": 50 },
-            "output": { "fahrenheit":  122 }
+            "output": { "fahrenheit": 122 }
         },
         {
             "input": { "celsius": 100 },

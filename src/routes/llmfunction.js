@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
 
 function setupRoutes(app, controller) {
     // POST endpoint för llmfunction/create
@@ -8,7 +9,11 @@ function setupRoutes(app, controller) {
             const result = await controller.createFunction(req.body);
             res.status(201).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            if (error instanceof FunctionValidationError) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     });
 
@@ -18,7 +23,11 @@ function setupRoutes(app, controller) {
             const result = await controller.getFunction(req.params.identifier);
             res.json(result);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            if (error instanceof FunctionNotFoundError) {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     });
 
@@ -28,11 +37,12 @@ function setupRoutes(app, controller) {
             const result = await controller.runFunction(req.params.identifier, req.body);
             res.json(result);
         } catch (error) {
-            // Om funktionen inte hittas, returnera 404, annars 400
-            if (error.message.includes('not found')) {
+            if (error instanceof FunctionNotFoundError) {
                 res.status(404).json({ error: error.message });
-            } else {
+            } else if (error instanceof FunctionExecutionError) {
                 res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
             }
         }
     });
@@ -43,7 +53,7 @@ function setupRoutes(app, controller) {
             const result = await controller.listFunctions();
             res.json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            res.status(500).json({ error: error.message });
         }
     });
 
@@ -53,7 +63,11 @@ function setupRoutes(app, controller) {
             await controller.removeFunction(req.params.identifier);
             res.status(204).send();
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            if (error instanceof FunctionNotFoundError) {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
         }
     });
 
@@ -63,10 +77,12 @@ function setupRoutes(app, controller) {
             const result = await controller.testFunction(req.params.identifier);
             res.json(result);
         } catch (error) {
-            if (error.message.includes('not found')) {
+            if (error instanceof FunctionNotFoundError) {
                 res.status(404).json({ error: error.message });
-            } else {
+            } else if (error instanceof FunctionExecutionError) {
                 res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
             }
         }
     });

@@ -17,48 +17,42 @@ class Mockache {
         this.functions = new Map();
     }
 
-    init(prompt, exampleOutput) {
+    gpt3SingleMessage(prompt, input, exampleOutput) {
         this.#prompt = prompt;
         this.#exampleOutput = exampleOutput;
-    }
-
-    gpt3SingleMessage(input) {
         return this.#gptSingleMessage("gpt-3.5-turbo", input)
     }
 
-    gpt4SingleMessage(prompt, input) {
-        // Simulera enkel logik för tester
-        if (prompt.includes('temperatur')) {
-            const celsius = input.celsius;
-            return { fahrenheit: (celsius * 9/5) + 32 };
-        } else if (prompt.includes('Addera')) {
-            return { sum: input.a + input.b };
-        }
-        return { result: "test" };
+    gpt4SingleMessage(prompt, input, exampleOutput) {
+        this.#prompt = prompt;
+        this.#exampleOutput = exampleOutput;
+        return this.#gptSingleMessage("gpt-4o-mini", input);
     }
 
-    #singleMessage(model, input) {
-        const message = `${this.#prompt}\n\nInput:\n${input}\n\Model:\n$${JSON.stringify(this.#exampleOutput, null, 2)}`;
-
-        const messages = [
-            {
-                "role": "system",
-                "content": message
-            }
-        ]
-
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-
-        return this.#post(model, messages, headers)
-    }
 
     #gptSingleMessage(model, input) {
         if (input.length > 16000) {
-            throw new Error("To large content " + input.length)
+            throw new Error("Too large content, content length: " + input.length)
         }
-        const message = `${this.#prompt}\n\nInput:\n${input}\n\nModel:\n${JSON.stringify(this.#exampleOutput, null, 2)}`;
+
+        const exampleOutputJSONSTring =  JSON.stringify(this.#exampleOutput, null, 2)
+        const inputJSONString =  JSON.stringify(input, null, 2)
+
+        const message = `
+Du är en del av ett program, försök lösa uppgiften som anges som Prompt som om du är en 
+funktion som skall skapa en JSON-objekt som motsvarar det som anges som exampleOutput. 
+Diskutera inte om prompten, utan bara lös uppgiften. Ditt svar är bara JSON-objektet.
+Var noga med att skapa ett korrekt JSON-objekt som motsvarar det som anges som ExampleOutput. 
+Kommatecken efter varje värde i JSON-objektet.
+
+ * Prompt:
+${this.#prompt}
+
+ * Input:
+${inputJSONString}
+
+ * ExampleOutput:
+$${exampleOutputJSONSTring}`;
 
         const messages = [
             {
@@ -73,6 +67,7 @@ class Mockache {
             "OpenAI-Organization": this.#OPENAI_API_ORG
         };
 
+        console.log(message)
         return this.#post(model, messages, headers)
     }
 

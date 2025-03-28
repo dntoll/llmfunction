@@ -1,5 +1,6 @@
 const LLMFunction = require('../models/LLMFunction');
 const StorageService = require('../services/StorageService');
+const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
 
 class APIController {
     constructor(mockache = null) {
@@ -24,7 +25,7 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         if (!LLMFunction.validate(data)) {
-            throw new Error('Saknade obligatoriska fält. Kontrollera att prompt, exampleInput och examples finns med.');
+            throw new FunctionValidationError('Saknade obligatoriska fält. Kontrollera att prompt, exampleOutput och examples finns med.');
         }
 
         const llmFunction = LLMFunction.fromJSON(data);
@@ -41,7 +42,7 @@ class APIController {
         
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
-            throw new Error('Funktion hittades inte med den angivna identifiern.');
+            throw new FunctionNotFoundError(identifier);
         }
         return data;
     }
@@ -51,7 +52,7 @@ class APIController {
         
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
-            throw new Error('Funktion hittades inte med den angivna identifiern.');
+            throw new FunctionNotFoundError(identifier);
         }
         await this.storageService.removeFunction(identifier);
     }
@@ -66,12 +67,12 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         if (!this.mockache) {
-            throw new Error('Mockache är inte initialiserad');
+            throw new FunctionExecutionError('Mockache är inte initialiserad');
         }
         
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
-            throw new Error('Funktion hittades inte med den angivna identifiern.');
+            throw new FunctionNotFoundError(identifier);
         }
         const llmFunction = LLMFunction.fromJSON(data);
         return llmFunction.run(this.mockache, input);
@@ -81,12 +82,12 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         if (!this.mockache) {
-            throw new Error('Mockache är inte initialiserad');
+            throw new FunctionExecutionError('Mockache är inte initialiserad');
         }
         
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
-            throw new Error('Funktion hittades inte med den angivna identifiern.');
+            throw new FunctionNotFoundError(identifier);
         }
         const llmFunction = LLMFunction.fromJSON(data);
         return llmFunction.runAllExamples(this.mockache);

@@ -3,9 +3,9 @@ const crypto = require('crypto');
 class LLMFunction {
 
 
-    constructor(prompt, exampleInput, examples) {
+    constructor(prompt, exampleOutput, examples) {
         this.prompt = prompt;
-        this.exampleInput = exampleInput;
+        this.exampleOutput = exampleOutput;
         this.examples = examples;
         this.identifier = this.#generateIdentifier();
     }
@@ -14,14 +14,14 @@ class LLMFunction {
         if (!LLMFunction.validate(data)) {
             throw new Error('Ogiltig data för LLMFunction');
         }
-        return new LLMFunction(data.prompt, data.exampleInput, data.examples);
+        return new LLMFunction(data.prompt, data.exampleOutput, data.examples);
     }
 
     static validate(data) {
         return (
             data &&
             typeof data.prompt === 'string' &&
-            data.exampleInput &&
+            data.exampleOutput &&
             Array.isArray(data.examples) &&
             data.examples.length > 0 &&
             data.examples.every(example => 
@@ -36,7 +36,7 @@ class LLMFunction {
     #generateIdentifier() {
         const data = JSON.stringify({
             prompt: this.prompt,
-            exampleInput: this.exampleInput,
+            exampleOutput: this.exampleOutput,
             examples: this.examples
         });
         return crypto.createHash('sha256').update(data).digest('hex');
@@ -45,13 +45,13 @@ class LLMFunction {
     toJSON() {
         return {
             prompt: this.prompt,
-            exampleInput: this.exampleInput,
+            exampleOutput: this.exampleOutput,
             examples: this.examples
         };
     }
 
     run(mockache, inputJson) {
-        const ret = mockache.gpt4SingleMessage(this.prompt, inputJson);
+        const ret = mockache.gpt4SingleMessage(this.prompt, inputJson, this.exampleOutput);
         return ret
     }
 
