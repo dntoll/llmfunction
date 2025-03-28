@@ -1,47 +1,31 @@
 # LLM Function API
 
-Ett RESTful API för att skapa och hantera LLM-funktioner.
+Ett RESTful API för att hantera LLM-funktioner med persistent lagring.
 
 ## Installation
 
+1. Klona repot
+2. Installera beroenden:
 ```bash
 npm install
 ```
 
-## Starta servern
+## Användning
 
+Starta servern:
 ```bash
 npm start
 ```
 
-Servern startar på port 3000 som standard. Du kan ändra porten genom att sätta miljövariabeln `PORT`.
+Servern kommer att starta på port 3000.
 
 ## API Endpoints
 
-### POST /llmfunction/create
-
-Skapar en ny LLM-funktion baserad på angiven prompt och exempel.
-
-#### Request Body
-
-```json
-{
-    "prompt": "string",
-    "exampleInput": object,
-    "examples": array
-}
-```
-
-| Fält | Typ | Beskrivning |
-|------|-----|-------------|
-| prompt | string | Beskrivningen av funktionen |
-| exampleInput | object | Ett exempel på indata för funktionen |
-| examples | array | Lista med exempel på input/output-par |
-
-#### Exempel Request
-
-```json
-{
+### Skapa en funktion
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
     "prompt": "Konvertera temperatur från Celsius till Fahrenheit",
     "exampleInput": {
         "celsius": 0
@@ -50,68 +34,63 @@ Skapar en ny LLM-funktion baserad på angiven prompt och exempel.
         {
             "input": { "celsius": 0 },
             "output": { "fahrenheit": 32 }
-        },
-        {
-            "input": { "celsius": 100 },
-            "output": { "fahrenheit": 212 }
         }
     ]
-}
+}' \
+  http://localhost:3000/llmfunction/create
 ```
 
-#### Response
-
-```json
-{
-    "identifier": "string",
-    "data": {
-        "prompt": "string",
-        "exampleInput": object,
-        "examples": array
-    }
-}
+### Hämta en funktion
+```bash
+curl http://localhost:3000/llmfunction/get/:identifier
 ```
 
-| Fält | Typ | Beskrivning |
-|------|-----|-------------|
-| identifier | string | Unik SHA-256 hash av request body |
-| data | object | Originaldata från request |
-
-#### Exempel Response
-
-```json
-{
-    "identifier": "a1b2c3d4e5f6g7h8i9j0...",
-    "data": {
-        "prompt": "Konvertera temperatur från Celsius till Fahrenheit",
-        "exampleInput": {
-            "celsius": 0
-        },
-        "examples": [
-            {
-                "input": { "celsius": 0 },
-                "output": { "fahrenheit": 32 }
-            },
-            {
-                "input": { "celsius": 100 },
-                "output": { "fahrenheit": 212 }
-            }
-        ]
-    }
-}
+### Lista alla funktioner
+```bash
+curl http://localhost:3000/llmfunction/list
 ```
 
-#### Felhantering
-
-Om obligatoriska fält saknas returneras statuskod 400 med följande response:
-
-```json
-{
-    "error": "Saknade obligatoriska fält. Kontrollera att prompt, exampleInput och examples finns med."
-}
+### Ta bort en funktion
+```bash
+curl -X DELETE http://localhost:3000/llmfunction/remove/:identifier
 ```
 
-#### Statuskoder
+## Lagring
 
-- 201: Funktion skapad framgångsrikt
-- 400: Felaktig request (saknade fält) 
+Funktioner lagras individuellt i filsystemet under `data/functions/` med en index-fil i `data/index.json`. Varje funktion sparas i en separat JSON-fil med sin identifier som filnamn.
+
+## Tester
+
+### Automatiska tester
+Kör testerna med:
+```bash
+npm test
+```
+
+### Manuella tester
+Det finns en serie bash-script för manuell testning av API:et. Dessa använder `curl` för att göra HTTP-anrop.
+
+1. Skapa en funktion:
+```bash
+./manual_tests/createConvert.sh
+```
+
+2. Hämta en funktion:
+```bash
+./manual_tests/getConvert.sh <identifier>
+```
+
+3. Ta bort en funktion:
+```bash
+./manual_tests/removeConvert.sh <identifier>
+```
+
+## Felhantering
+
+API:et returnerar följande HTTP-statuskoder:
+- 201: Funktion skapad
+- 200: Funktion hämtad eller listad
+- 204: Funktion borttagen
+- 400: Ogiltig data
+- 404: Funktion hittades inte
+- 500: Serverfel 

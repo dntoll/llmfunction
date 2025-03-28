@@ -1,11 +1,13 @@
 const crypto = require('crypto');
 
 class LLMFunction {
+
+
     constructor(prompt, exampleInput, examples) {
         this.prompt = prompt;
         this.exampleInput = exampleInput;
         this.examples = examples;
-        this.identifier = this.generateIdentifier();
+        this.identifier = this.#generateIdentifier();
     }
 
     static fromJSON(data) {
@@ -31,7 +33,7 @@ class LLMFunction {
         );
     }
 
-    generateIdentifier() {
+    #generateIdentifier() {
         const data = JSON.stringify({
             prompt: this.prompt,
             exampleInput: this.exampleInput,
@@ -46,6 +48,11 @@ class LLMFunction {
             exampleInput: this.exampleInput,
             examples: this.examples
         };
+    }
+
+    run(mockache, inputJson) {
+        const ret = mockache.gpt4SingleMessage(this.prompt, inputJson);
+        return ret
     }
 }
 

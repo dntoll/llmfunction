@@ -1,9 +1,17 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const APIController = require('./controllers/APIController');
+const Mockache = require('./models/mockache');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+const mockache = new Mockache(
+    process.env.CACHE_SERVER,
+    process.env.OPENAI_API_KEY_2,
+    process.env.OPENAI_API_ORG
+);
 
 // Middleware för att hantera JSON-data
 app.use(bodyParser.json());
@@ -11,7 +19,7 @@ app.use(bodyParser.json());
 // Initialisera APIController
 async function initializeController() {
     try {
-        app.locals.apiController = new APIController();
+        app.locals.apiController = new APIController(mockache);
         await app.locals.apiController.initialize();
         console.log('APIController initialiserad');
     } catch (error) {
@@ -34,6 +42,16 @@ app.post('/llmfunction/create', async (req, res) => {
 app.get('/llmfunction/get/:identifier', async (req, res) => {
     try {
         const result = await app.locals.apiController.getFunction(req.params.identifier);
+        res.json(result);
+    } catch (error) {
+        res.status(404).json({ error: error.message });
+    }
+});
+
+// POST endpoint för llmfunction/run/:identifier
+app.post('/llmfunction/run/:identifier', async (req, res) => {
+    try {
+        const result = await app.locals.apiController.runFunction(req.params.identifier, req.body);
         res.json(result);
     } catch (error) {
         res.status(404).json({ error: error.message });

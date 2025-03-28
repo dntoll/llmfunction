@@ -2,14 +2,18 @@ const LLMFunction = require('../models/LLMFunction');
 const StorageService = require('../services/StorageService');
 
 class APIController {
-    constructor() {
+    constructor(mockache = null) {
+        this.mockache = mockache;
         this.storageService = new StorageService();
-        this.initialize();
+        this.initialized = false;
     }
 
     async initialize() {
+        if (this.initialized) return;
+        
         try {
             await this.storageService.initialize();
+            this.initialized = true;
         } catch (error) {
             console.error('Fel vid initialisering av APIController:', error);
             throw error;
@@ -17,6 +21,8 @@ class APIController {
     }
 
     async createFunction(data) {
+        if (!this.initialized) await this.initialize();
+        
         if (!LLMFunction.validate(data)) {
             throw new Error('Saknade obligatoriska fält. Kontrollera att prompt, exampleInput och examples finns med.');
         }
@@ -31,6 +37,8 @@ class APIController {
     }
 
     async getFunction(identifier) {
+        if (!this.initialized) await this.initialize();
+        
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
             throw new Error('Funktion hittades inte med den angivna identifiern.');
@@ -39,6 +47,8 @@ class APIController {
     }
 
     async removeFunction(identifier) {
+        if (!this.initialized) await this.initialize();
+        
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
             throw new Error('Funktion hittades inte med den angivna identifiern.');
@@ -47,7 +57,24 @@ class APIController {
     }
 
     async listFunctions() {
+        if (!this.initialized) await this.initialize();
+        
         return await this.storageService.listFunctions();
+    }
+
+    async runFunction(identifier, input) {
+        if (!this.initialized) await this.initialize();
+        
+        if (!this.mockache) {
+            throw new Error('Mockache är inte initialiserad');
+        }
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new Error('Funktion hittades inte med den angivna identifiern.');
+        }
+        const llmFunction = LLMFunction.fromJSON(data);
+        return llmFunction.run(this.mockache, input);
     }
 }
 
