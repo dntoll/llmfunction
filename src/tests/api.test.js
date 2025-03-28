@@ -1,6 +1,7 @@
 const request = require('supertest');
 const express = require('express');
 const APIController = require('../controllers/APIController');
+const { setupRoutes } = require('../routes/llmfunction');
 
 // Skapa en mock-version av Mockache
 const mockMockache = {
@@ -25,51 +26,10 @@ app.use(express.json());
 const controller = new APIController(mockMockache);
 app.locals.apiController = controller;
 
-// Lägg till routes
-app.post('/llmfunction/create', async (req, res) => {
-    try {
-        const result = await controller.createFunction(req.body);
-        res.status(201).json(result);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-});
+// Sätt upp routes
+setupRoutes(app, controller);
 
-app.get('/llmfunction/get/:identifier', async (req, res) => {
-    try {
-        const result = await controller.getFunction(req.params.identifier);
-        res.json(result);
-    } catch (error) {
-        res.status(404).json({ error: error.message });
-    }
-});
 
-app.post('/llmfunction/run/:identifier', async (req, res) => {
-    try {
-        const result = await controller.runFunction(req.params.identifier, req.body);
-        res.json(result);
-    } catch (error) {
-        res.status(404).json({ error: error.message });
-    }
-});
-
-app.get('/llmfunction/list', async (req, res) => {
-    try {
-        const functions = await controller.listFunctions();
-        res.json(functions);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.delete('/llmfunction/remove/:identifier', async (req, res) => {
-    try {
-        await controller.removeFunction(req.params.identifier);
-        res.status(204).send();
-    } catch (error) {
-        res.status(404).json({ error: error.message });
-    }
-});
 
 describe('API-tester', () => {
     let testIdentifier1;
@@ -181,12 +141,12 @@ describe('API-tester', () => {
             const runResponse1 = await request(app)
                 .post(`/llmfunction/run/${testIdentifier1}`)
                 .send({ celsius: 25 });
-            expect(runResponse1.status).toBe(404);
+            expect(runResponse1.status).toBe(400);
 
             const runResponse2 = await request(app)
                 .post(`/llmfunction/run/${testIdentifier2}`)
                 .send({ meters: 5 });
-            expect(runResponse2.status).toBe(404);
+            expect(runResponse2.status).toBe(400);
         });
     });
 }); 

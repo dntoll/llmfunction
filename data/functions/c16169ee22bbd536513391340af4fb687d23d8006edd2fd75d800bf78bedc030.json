@@ -1,0 +1,24 @@
+{
+  "prompt": "Konvertera temperatur fr�n Celsius till Fahrenheit",
+  "exampleInput": {
+    "celsius": 0
+  },
+  "examples": [
+    {
+      "input": {
+        "celsius": 0
+      },
+      "output": {
+        "fahrenheit": 32
+      }
+    },
+    {
+      "input": {
+        "celsius": 100
+      },
+      "output": {
+        "fahrenheit": 212
+      }
+    }
+  ]
+}
