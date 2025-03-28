@@ -29,8 +29,6 @@ app.locals.apiController = controller;
 // Sätt upp routes
 setupRoutes(app, controller);
 
-
-
 describe('API-tester', () => {
     let testIdentifier1;
     let testIdentifier2;
@@ -111,6 +109,64 @@ describe('API-tester', () => {
 
             expect(response.status).toBe(200);
             expect(response.body).toEqual({ feet: 16.4042 });
+        });
+    });
+
+    describe('Testa funktioner', () => {
+        test('kör alla exempel för temperaturkonvertering', async () => {
+            const response = await request(app)
+                .post(`/llmfunction/test/${testIdentifier1}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body).toMatchObject({
+                identifier: testIdentifier1,
+                totalTests: 2,
+                passedTests: 2,
+                failedTests: 0
+            });
+            expect(response.body.results).toHaveLength(2);
+            expect(response.body.results[0]).toMatchObject({
+                input: { celsius: 0 },
+                expectedOutput: { fahrenheit: 32 },
+                success: true
+            });
+            expect(response.body.results[1]).toMatchObject({
+                input: { celsius: 100 },
+                expectedOutput: { fahrenheit: 212 },
+                success: true
+            });
+        });
+
+        test('kör alla exempel för längdkonvertering', async () => {
+            const response = await request(app)
+                .post(`/llmfunction/test/${testIdentifier2}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body).toMatchObject({
+                identifier: testIdentifier2,
+                totalTests: 2,
+                passedTests: 2,
+                failedTests: 0
+            });
+            expect(response.body.results).toHaveLength(2);
+            expect(response.body.results[0]).toMatchObject({
+                input: { meters: 1 },
+                expectedOutput: { feet: 3.28084 },
+                success: true
+            });
+            expect(response.body.results[1]).toMatchObject({
+                input: { meters: 2 },
+                expectedOutput: { feet: 6.56168 },
+                success: true
+            });
+        });
+
+        test('hanterar 404 för icke-existerande funktion', async () => {
+            const response = await request(app)
+                .post('/llmfunction/test/icke-existerande-id');
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('hittades inte');
         });
     });
 

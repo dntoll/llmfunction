@@ -16,6 +16,10 @@ curl -s -X POST \
             "output": { "fahrenheit": 32 }
         },
         {
+            "input": { "celsius": 50 },
+            "output": { "fahrenheit":  122 }
+        },
+        {
             "input": { "celsius": 100 },
             "output": { "fahrenheit": 212 }
         }

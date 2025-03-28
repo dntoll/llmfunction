@@ -54,6 +54,32 @@ class LLMFunction {
         const ret = mockache.gpt4SingleMessage(this.prompt, inputJson);
         return ret
     }
+
+    async runAllExamples(mockache) {
+        const results = [];
+        for (const example of this.examples) {
+            const output = await this.run(mockache, example.input);
+            const success = JSON.stringify(output) === JSON.stringify(example.output);
+            results.push({
+                input: example.input,
+                expectedOutput: example.output,
+                actualOutput: output,
+                success
+            });
+        }
+        
+        const totalTests = results.length;
+        const passedTests = results.filter(r => r.success).length;
+        const failedTests = totalTests - passedTests;
+
+        return {
+            identifier: this.identifier,
+            totalTests,
+            passedTests,
+            failedTests,
+            results
+        };
+    }
 }
 
 module.exports = LLMFunction; 

@@ -76,6 +76,21 @@ class APIController {
         const llmFunction = LLMFunction.fromJSON(data);
         return llmFunction.run(this.mockache, input);
     }
+
+    async testFunction(identifier) {
+        if (!this.initialized) await this.initialize();
+        
+        if (!this.mockache) {
+            throw new Error('Mockache är inte initialiserad');
+        }
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new Error('Funktion hittades inte med den angivna identifiern.');
+        }
+        const llmFunction = LLMFunction.fromJSON(data);
+        return llmFunction.runAllExamples(this.mockache);
+    }
 }
 
 module.exports = APIController; 

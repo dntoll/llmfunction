@@ -56,6 +56,20 @@ function setupRoutes(app, controller) {
             res.status(404).json({ error: error.message });
         }
     });
+
+    // POST endpoint för llmfunction/test
+    app.post('/llmfunction/test/:identifier', async (req, res) => {
+        try {
+            const result = await controller.testFunction(req.params.identifier);
+            res.json(result);
+        } catch (error) {
+            if (error.message.includes('not found')) {
+                res.status(404).json({ error: error.message });
+            } else {
+                res.status(400).json({ error: error.message });
+            }
+        }
+    });
 }
 
 module.exports = { setupRoutes }; 

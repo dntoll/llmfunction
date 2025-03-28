@@ -55,6 +55,21 @@ curl http://localhost:3000/llmfunction/list
 curl -X DELETE http://localhost:3000/llmfunction/remove/:identifier
 ```
 
+### Köra alla exempel på en funktion
+```bash
+curl -X POST http://localhost:3000/llmfunction/test/:identifier
+```
+
+Detta kommer att köra alla exempel som är definierade för funktionen och returnera en testrapport med följande information:
+- Totalt antal tester
+- Antal lyckade tester
+- Antal misslyckade tester
+- Detaljerad information för varje test, inklusive:
+  - Indata
+  - Förväntad utdata
+  - Faktisk utdata
+  - Om testet lyckades eller misslyckades
+
 ## Lagring
 
 Funktioner lagras individuellt i filsystemet under `data/functions/` med en index-fil i `data/index.json`. Varje funktion sparas i en separat JSON-fil med sin identifier som filnamn.
