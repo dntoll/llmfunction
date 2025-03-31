@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const APIController = require('./controllers/APIController');
 const Mockache = require('./models/mockache');
 const { setupRoutes } = require('./routes/llmfunction');
@@ -14,7 +15,8 @@ const mockache = new Mockache(
     process.env.OPENAI_API_ORG
 );
 
-// Middleware for handling JSON data
+// Middleware for handling JSON data and CORS
+app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize APIController
