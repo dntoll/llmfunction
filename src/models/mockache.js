@@ -39,11 +39,11 @@ class Mockache {
         const inputJSONString =  JSON.stringify(input, null, 2)
 
         const message = `
-Du är en del av ett program, försök lösa uppgiften som anges som Prompt som om du är en 
-funktion som skall skapa en JSON-objekt som motsvarar det som anges som exampleOutput. 
-Diskutera inte om prompten, utan bara lös uppgiften. Ditt svar är bara JSON-objektet.
-Var noga med att skapa ett korrekt JSON-objekt som motsvarar det som anges som ExampleOutput. 
-Kommatecken efter varje värde i JSON-objektet.
+You are part of a program, try to solve the task specified in the Prompt as if you are a 
+function that should create a JSON object that matches what is specified as exampleOutput. 
+Do not discuss the prompt, just solve the task. Your response is only the JSON object.
+Make sure to create a correct JSON object that matches what is specified as ExampleOutput. 
+Commas after each value in the JSON object.
 
  * Prompt:
 ${this.#prompt}

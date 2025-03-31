@@ -4,25 +4,25 @@ const APIController = require('../controllers/APIController');
 const { setupRoutes } = require('../routes/llmfunction');
 const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
 
-// Skapa en mock-version av Mockache som bara returnerar testdata
+// Create a mock version of Mockache that only returns test data
 const mockMockache = {
     gpt4SingleMessage: (prompt, input) => {
         return { result: "test" };
     }
 };
 
-// Skapa en test-app
+// Create a test app
 const app = express();
 app.use(express.json());
 
-// Skapa en controller med mockMockache
+// Create a controller with mockMockache
 const controller = new APIController(mockMockache);
 app.locals.apiController = controller;
 
-// Sätt upp routes
+// Set up routes
 setupRoutes(app, controller);
 
-describe('API-tester', () => {
+describe('API Tests', () => {
     let testIdentifier1;
     let testIdentifier2;
 
@@ -30,13 +30,13 @@ describe('API-tester', () => {
         await controller.initialize();
     });
 
-    describe('Skapa och verifiera funktioner', () => {
-        test('skapar två olika funktioner', async () => {
-            // Skapa första funktionen
+    describe('Create and verify functions', () => {
+        test('creates two different functions', async () => {
+            // Create first function
             const response1 = await request(app)
                 .post('/llmfunction/create')
                 .send({
-                    prompt: "Test funktion 1",
+                    prompt: "Test function 1",
                     exampleOutput: { result: "test1" },
                     examples: [
                         { input: { test: 1 }, output: { result: "test1" } }
@@ -47,11 +47,11 @@ describe('API-tester', () => {
             expect(response1.body).toHaveProperty('data');
             testIdentifier1 = response1.body.identifier;
 
-            // Skapa andra funktionen
+            // Create second function
             const response2 = await request(app)
                 .post('/llmfunction/create')
                 .send({
-                    prompt: "Test funktion 2",
+                    prompt: "Test function 2",
                     exampleOutput: { result: "test2" },
                     examples: [
                         { input: { test: 2 }, output: { result: "test2" } }
@@ -63,39 +63,39 @@ describe('API-tester', () => {
             testIdentifier2 = response2.body.identifier;
         });
 
-        test('returnerar 400 vid ogiltig data', async () => {
+        test('returns 400 for invalid data', async () => {
             const response = await request(app)
                 .post('/llmfunction/create')
                 .send({
-                    prompt: "Test funktion",
-                    // Saknar exampleOutput och examples
+                    prompt: "Test function",
+                    // Missing exampleOutput and examples
                 });
             expect(response.status).toBe(400);
-            expect(response.body.error).toContain('Saknade obligatoriska fält');
+            expect(response.body.error).toContain('Missing required fields');
         });
 
-        test('hämtar de skapade funktionerna', async () => {
-            // Hämta första funktionen
+        test('retrieves the created functions', async () => {
+            // Get first function
             const getResponse1 = await request(app)
                 .get(`/llmfunction/get/${testIdentifier1}`);
             expect(getResponse1.status).toBe(200);
-            expect(getResponse1.body.prompt).toBe("Test funktion 1");
+            expect(getResponse1.body.prompt).toBe("Test function 1");
 
-            // Hämta andra funktionen
+            // Get second function
             const getResponse2 = await request(app)
                 .get(`/llmfunction/get/${testIdentifier2}`);
             expect(getResponse2.status).toBe(200);
-            expect(getResponse2.body.prompt).toBe("Test funktion 2");
+            expect(getResponse2.body.prompt).toBe("Test function 2");
         });
 
-        test('returnerar 404 vid icke-existerande funktion', async () => {
+        test('returns 404 for non-existent function', async () => {
             const response = await request(app)
-                .get('/llmfunction/get/icke-existerande-id');
+                .get('/llmfunction/get/non-existent-id');
             expect(response.status).toBe(404);
-            expect(response.body.error).toContain('hittades inte');
+            expect(response.body.error).toContain('not found');
         });
 
-        test('listar alla funktioner', async () => {
+        test('lists all functions', async () => {
             const response = await request(app)
                 .get('/llmfunction/list');
 
@@ -109,8 +109,8 @@ describe('API-tester', () => {
         });
     });
 
-    describe('Kör funktioner', () => {
-        test('kör en funktion', async () => {
+    describe('Run functions', () => {
+        test('runs a function', async () => {
             const response = await request(app)
                 .post(`/llmfunction/run/${testIdentifier1}`)
                 .send({ test: 1 });
@@ -119,17 +119,17 @@ describe('API-tester', () => {
             expect(response.body).toHaveProperty('result');
         });
 
-        test('returnerar 404 vid körning av icke-existerande funktion', async () => {
+        test('returns 404 when running non-existent function', async () => {
             const response = await request(app)
-                .post('/llmfunction/run/icke-existerande-id')
+                .post('/llmfunction/run/non-existent-id')
                 .send({ test: 1 });
 
             expect(response.status).toBe(404);
-            expect(response.body.error).toContain('hittades inte');
+            expect(response.body.error).toContain('not found');
         });
 
-        test('returnerar 400 när mockache inte är initialiserad', async () => {
-            // Skapa en ny app med en controller utan mockache
+        test('returns 400 when mockache is not initialized', async () => {
+            // Create a new app with a controller without mockache
             const testApp = express();
             testApp.use(express.json());
             const controllerWithoutMockache = new APIController();
@@ -142,12 +142,12 @@ describe('API-tester', () => {
                 .send({ test: 1 });
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toContain('Mockache är inte initialiserad');
+            expect(response.body.error).toContain('Mockache is not initialized');
         });
     });
 
-    describe('Testa funktioner', () => {
-        test('kör alla exempel för en funktion', async () => {
+    describe('Test functions', () => {
+        test('runs all examples for a function', async () => {
             const response = await request(app)
                 .post(`/llmfunction/test/${testIdentifier1}`);
 
@@ -159,16 +159,16 @@ describe('API-tester', () => {
             });
         });
 
-        test('returnerar 404 vid test av icke-existerande funktion', async () => {
+        test('returns 404 when testing non-existent function', async () => {
             const response = await request(app)
-                .post('/llmfunction/test/icke-existerande-id');
+                .post('/llmfunction/test/non-existent-id');
 
             expect(response.status).toBe(404);
-            expect(response.body.error).toContain('hittades inte');
+            expect(response.body.error).toContain('not found');
         });
 
-        test('returnerar 400 när mockache inte är initialiserad', async () => {
-            // Skapa en ny app med en controller utan mockache
+        test('returns 400 when mockache is not initialized', async () => {
+            // Create a new app with a controller without mockache
             const testApp = express();
             testApp.use(express.json());
             const controllerWithoutMockache = new APIController();
@@ -180,25 +180,25 @@ describe('API-tester', () => {
                 .post(`/llmfunction/test/${testIdentifier1}`);
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toContain('Mockache är inte initialiserad');
+            expect(response.body.error).toContain('Mockache is not initialized');
         });
     });
 
-    describe('Ta bort funktioner', () => {
-        test('tar bort funktionerna', async () => {
-            // Ta bort första funktionen
+    describe('Remove functions', () => {
+        test('removes the functions', async () => {
+            // Remove first function
             const removeResponse1 = await request(app)
                 .delete(`/llmfunction/remove/${testIdentifier1}`);
             expect(removeResponse1.status).toBe(204);
 
-            // Ta bort andra funktionen
+            // Remove second function
             const removeResponse2 = await request(app)
                 .delete(`/llmfunction/remove/${testIdentifier2}`);
             expect(removeResponse2.status).toBe(204);
         });
 
-        test('verifierar att funktionerna är borta', async () => {
-            // Kontrollera att get returnerar 404
+        test('verifies that the functions are gone', async () => {
+            // Check that get returns 404
             const getResponse1 = await request(app)
                 .get(`/llmfunction/get/${testIdentifier1}`);
             expect(getResponse1.status).toBe(404);
@@ -207,7 +207,7 @@ describe('API-tester', () => {
                 .get(`/llmfunction/get/${testIdentifier2}`);
             expect(getResponse2.status).toBe(404);
 
-            // Kontrollera att run returnerar 404
+            // Check that run returns 404
             const runResponse1 = await request(app)
                 .post(`/llmfunction/run/${testIdentifier1}`)
                 .send({ test: 1 });
@@ -217,6 +217,66 @@ describe('API-tester', () => {
                 .post(`/llmfunction/run/${testIdentifier2}`)
                 .send({ test: 2 });
             expect(runResponse2.status).toBe(404);
+        });
+    });
+
+    describe('Improve functions', () => {
+        let improveTestIdentifier;
+
+        beforeEach(async () => {
+            // Create a function to improve
+            const response = await request(app)
+                .post('/llmfunction/create')
+                .send({
+                    prompt: "Test function to improve",
+                    exampleOutput: { result: "test" },
+                    examples: [
+                        { input: { test: 1 }, output: { result: "test" } }
+                    ]
+                });
+            expect(response.status).toBe(201);
+            improveTestIdentifier = response.body.identifier;
+        });
+
+        test('improves a function successfully', async () => {
+            const response = await request(app)
+                .post(`/llmfunction/improve/${improveTestIdentifier}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body).toMatchObject({
+                message: 'Prompt improved',
+                newPrompt: expect.any(String)
+            });
+        });
+
+        test('returns 404 when improving non-existent function', async () => {
+            const response = await request(app)
+                .post('/llmfunction/improve/non-existent-id');
+
+            expect(response.status).toBe(404);
+            expect(response.body.error).toContain('not found');
+        });
+
+        test('returns 400 when mockache is not initialized', async () => {
+            // Create a new app with a controller without mockache
+            const testApp = express();
+            testApp.use(express.json());
+            const controllerWithoutMockache = new APIController();
+            await controllerWithoutMockache.initialize();
+            testApp.locals.apiController = controllerWithoutMockache;
+            setupRoutes(testApp, controllerWithoutMockache);
+
+            const response = await request(testApp)
+                .post(`/llmfunction/improve/${improveTestIdentifier}`);
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('Mockache is not initialized');
+        });
+
+        afterEach(async () => {
+            // Clean up by removing the test function
+            await request(app)
+                .delete(`/llmfunction/remove/${improveTestIdentifier}`);
         });
     });
 }); 

@@ -13,7 +13,7 @@ class LLMFunction {
 
     static fromJSON(data) {
         if (!LLMFunction.validate(data)) {
-            throw new Error('Ogiltig data för LLMFunction');
+            throw new Error('Invalid data for LLMFunction');
         }
         return new LLMFunction(data.prompt, data.initialPrompt,  data.exampleOutput, data.examples);
     }

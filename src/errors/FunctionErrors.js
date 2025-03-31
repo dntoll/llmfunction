@@ -7,7 +7,7 @@ class FunctionError extends Error {
 
 class FunctionNotFoundError extends FunctionError {
     constructor(identifier) {
-        super(`Funktion hittades inte med identifier: ${identifier}`);
+        super(`Function not found with identifier: ${identifier}`);
         this.identifier = identifier;
     }
 }

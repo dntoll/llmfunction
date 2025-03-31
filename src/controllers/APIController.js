@@ -16,7 +16,7 @@ class APIController {
             await this.storageService.initialize();
             this.initialized = true;
         } catch (error) {
-            console.error('Fel vid initialisering av APIController:', error);
+            console.error('Error initializing APIController:', error);
             throw error;
         }
     }
@@ -25,7 +25,7 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         if (!LLMFunction.validate(data)) {
-            throw new FunctionValidationError('Saknade obligatoriska fält. Kontrollera att prompt, exampleOutput och examples finns med.');
+            throw new FunctionValidationError('Missing required fields. Please check that prompt, exampleOutput, and examples are included.');
         }
 
         const llmFunction = LLMFunction.fromJSON(data);
@@ -67,7 +67,7 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         if (!this.mockache) {
-            throw new FunctionExecutionError('Mockache är inte initialiserad');
+            throw new FunctionExecutionError('Mockache is not initialized');
         }
         
         const data = await this.storageService.loadFunction(identifier);
@@ -82,7 +82,7 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         if (!this.mockache) {
-            throw new FunctionExecutionError('Mockache är inte initialiserad');
+            throw new FunctionExecutionError('Mockache is not initialized');
         }
         
         const data = await this.storageService.loadFunction(identifier);
@@ -97,7 +97,7 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         if (!this.mockache) {
-            throw new FunctionExecutionError('Mockache är inte initialiserad');
+            throw new FunctionExecutionError('Mockache is not initialized');
         }
         
         const data = await this.storageService.loadFunction(identifier);
@@ -107,11 +107,11 @@ class APIController {
         const llmFunction = LLMFunction.fromJSON(data);
         await llmFunction.improvePrompt(this.mockache);
         
-        // Spara den uppdaterade funktionen
+        // Save the updated function
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
         
         return {
-            message: 'Prompt förbättrad',
+            message: 'Prompt improved',
             newPrompt: llmFunction.identifier
         };
     }

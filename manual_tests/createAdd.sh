@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Skapa en funktion för att konvertera temperatur
-echo "Skapar en funktion för att konvertera temperatur från Celsius till Fahrenheit..."
+# Create a function to add numbers
+echo "Creating a function to add two numbers..."
 
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Addera två tal",
+    "prompt": "Add two numbers",
     "exampleOutput": {
-        "sum": 32
+        "sum": 3
     },
     "examples": [
         {
@@ -16,12 +16,12 @@ curl -s -X POST \
             "output": { "sum": 3 }
         },
         {
-            "input": { "a": -5, "b": 2 },
-            "output": { "sum": -3 }
+            "input": { "a": -1, "b": 1 },
+            "output": { "sum": 0 }
         },
         {
-            "input": { "a": 100, "b": 200 },
-            "output": { "sum": 300 }
+            "input": { "a": 0, "b": 0 },
+            "output": { "sum": 0 }
         }
     ]
 }' \

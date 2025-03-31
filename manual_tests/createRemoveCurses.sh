@@ -1,27 +1,27 @@
 #!/bin/bash
 
-# Skapa en funktion för att konvertera temperatur
-echo "Skapar en funktion som tar bort fula ord från en text"
+# Create a function to remove curse words from text
+echo "Creating a function that removes curse words from text"
 
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Returnera samma text men låt alla fula ord ersättas med 'beeeep': ",
+    "prompt": "Return the same text but replace all curse words with 'beeeep': ",
     "exampleOutput": {
-        "correctedText": "Du är en beep skit"
+        "correctedText": "You are a beep piece of crap"
     },
     "examples": [
         {
-            "input": { "text": "Jävla skit" },
-            "output": { "correctedText": "beeeep skit" }
+            "input": { "text": "Damn piece of crap" },
+            "output": { "correctedText": "beeeep piece of crap" }
         },
         {
-            "input": { "text": "Jag är en snäll text som inte har några fula ord" },
-            "output": { "correctedText": "Jag är en snäll text som inte har några fula ord" }
+            "input": { "text": "I am a nice text without any curse words" },
+            "output": { "correctedText": "I am a nice text without any curse words" }
         },
         {
-            "input": { "text": "I min text finns ett enda svärord, fuck också!" },
-            "output": { "correctedText": "I min text finns ett enda svärord, beeeep också!" }
+            "input": { "text": "In my text there is one curse word, fuck too!" },
+            "output": { "correctedText": "In my text there is one curse word, beeeep too!" }
         }
     ]
 }' \

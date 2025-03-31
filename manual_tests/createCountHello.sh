@@ -1,27 +1,27 @@
 #!/bin/bash
 
-# Skapa en funktion för att konvertera temperatur
-echo "Skapar en funktion som räknar antal 'hello' i en sträng"
+# Create a function to count 'hello' occurrences
+echo "Creating a function that counts the number of 'hello' in a string"
 
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Räkna antal 'hello' i en sträng",
+    "prompt": "Count the number of 'hello' in a string",
     "exampleOutput": {
-        "count": 3
+        "count": 2
     },
     "examples": [
         {
-            "input": { "str": "hello" },
-            "output": { "count": 1 }
-        },
-        {
-            "input": { "str": "hello world hello hi" },
+            "input": { "text": "hello world hello" },
             "output": { "count": 2 }
         },
         {
-            "input": { "str": "hello hello hello" },
-            "output": { "count": 3 }
+            "input": { "text": "hello" },
+            "output": { "count": 1 }
+        },
+        {
+            "input": { "text": "no hello here" },
+            "output": { "count": 0 }
         }
     ]
 }' \

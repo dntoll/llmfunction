@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Kontrollera att identifier är angiven
+# Check if identifier is provided
 if [ -z "$1" ]; then
-    echo "Användning: $0 <identifier>"
-    echo "Exempel: $0 abc123..."
+    echo "Usage: $0 <identifier>"
+    echo "Example: $0 abc123..."
     exit 1
 fi
 
-# Förbättra prompten för funktionen
-echo "Förbättrar prompt för funktion med identifier: $1"
+# Improve the prompt for the function
+echo "Improving prompt for function with identifier: $1"
 
 curl -X POST -s http://localhost:3000/llmfunction/improve/$1
 

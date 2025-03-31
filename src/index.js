@@ -14,28 +14,28 @@ const mockache = new Mockache(
     process.env.OPENAI_API_ORG
 );
 
-// Middleware för att hantera JSON-data
+// Middleware for handling JSON data
 app.use(bodyParser.json());
 
-// Initialisera APIController
+// Initialize APIController
 async function initializeController() {
     try {
         app.locals.apiController = new APIController(mockache);
         await app.locals.apiController.initialize();
-        console.log('APIController initialiserad');
+        console.log('APIController initialized');
         
-        // Sätt upp routes efter att controllern är initialiserad
+        // Set up routes after controller is initialized
         setupRoutes(app, app.locals.apiController);
     } catch (error) {
-        console.error('Fel vid initialisering av APIController:', error);
+        console.error('Error initializing APIController:', error);
         process.exit(1);
     }
 }
 
-// Starta servern
+// Start the server
 initializeController().then(() => {
     app.listen(port, () => {
-        console.log(`Server kör på port ${port}`);
+        console.log(`Server running on port ${port}`);
     });
 });
 

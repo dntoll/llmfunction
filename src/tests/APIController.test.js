@@ -1,7 +1,7 @@
 const APIController = require('../controllers/APIController');
 const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
 
-// Skapa en mock-version av Mockache som bara returnerar testdata
+// Create a mock version of Mockache that only returns test data
 const mockMockache = {
     gpt4SingleMessage: (prompt, input) => {
         return { result: "test" };
@@ -18,11 +18,11 @@ describe('APIController', () => {
         await controller.initialize();
     });
 
-    describe('Skapa och verifiera funktioner', () => {
-        test('skapar två olika funktioner', async () => {
-            // Skapa första funktionen
+    describe('Create and verify functions', () => {
+        test('creates two different functions', async () => {
+            // Create first function
             const result1 = await controller.createFunction({
-                prompt: "Test funktion 1",
+                prompt: "Test function 1",
                 exampleOutput: { result: "test1" },
                 examples: [
                     { input: { test: 1 }, output: { result: "test1" } }
@@ -32,9 +32,9 @@ describe('APIController', () => {
             expect(result1).toHaveProperty('data');
             testIdentifier1 = result1.identifier;
 
-            // Skapa andra funktionen
+            // Create second function
             const result2 = await controller.createFunction({
-                prompt: "Test funktion 2",
+                prompt: "Test function 2",
                 exampleOutput: { result: "test2" },
                 examples: [
                     { input: { test: 2 }, output: { result: "test2" } }
@@ -45,29 +45,29 @@ describe('APIController', () => {
             testIdentifier2 = result2.identifier;
         });
 
-        test('kastar FunctionValidationError vid ogiltig data', async () => {
+        test('throws FunctionValidationError for invalid data', async () => {
             await expect(controller.createFunction({
-                prompt: "Test funktion",
-                // Saknar exampleOutput och examples
+                prompt: "Test function",
+                // Missing exampleOutput and examples
             })).rejects.toThrow(FunctionValidationError);
         });
 
-        test('hämtar de skapade funktionerna', async () => {
-            // Hämta första funktionen
+        test('retrieves the created functions', async () => {
+            // Get first function
             const data1 = await controller.getFunction(testIdentifier1);
-            expect(data1.prompt).toBe("Test funktion 1");
+            expect(data1.prompt).toBe("Test function 1");
 
-            // Hämta andra funktionen
+            // Get second function
             const data2 = await controller.getFunction(testIdentifier2);
-            expect(data2.prompt).toBe("Test funktion 2");
+            expect(data2.prompt).toBe("Test function 2");
         });
 
-        test('kastar FunctionNotFoundError vid icke-existerande funktion', async () => {
-            await expect(controller.getFunction('icke-existerande-id'))
+        test('throws FunctionNotFoundError for non-existent function', async () => {
+            await expect(controller.getFunction('non-existent-id'))
                 .rejects.toThrow(FunctionNotFoundError);
         });
 
-        test('listar alla funktioner', async () => {
+        test('lists all functions', async () => {
             const functions = await controller.listFunctions();
             expect(functions).toEqual(
                 expect.arrayContaining([
@@ -78,18 +78,18 @@ describe('APIController', () => {
         });
     });
 
-    describe('Kör funktioner', () => {
-        test('kör en funktion', async () => {
+    describe('Run functions', () => {
+        test('runs a function', async () => {
             const result = await controller.runFunction(testIdentifier1, { test: 1 });
             expect(result).toHaveProperty('result');
         });
 
-        test('kastar FunctionNotFoundError vid körning av icke-existerande funktion', async () => {
-            await expect(controller.runFunction('icke-existerande-id', { test: 1 }))
+        test('throws FunctionNotFoundError when running non-existent function', async () => {
+            await expect(controller.runFunction('non-existent-id', { test: 1 }))
                 .rejects.toThrow(FunctionNotFoundError);
         });
 
-        test('kastar FunctionExecutionError när mockache inte är initialiserad', async () => {
+        test('throws FunctionExecutionError when mockache is not initialized', async () => {
             const controllerWithoutMockache = new APIController();
             await controllerWithoutMockache.initialize();
             
@@ -98,8 +98,8 @@ describe('APIController', () => {
         });
     });
 
-    describe('Testa funktioner', () => {
-        test('kör alla exempel för en funktion', async () => {
+    describe('Test functions', () => {
+        test('runs all examples for a function', async () => {
             const result = await controller.testFunction(testIdentifier1);
             expect(result).toMatchObject({
                 identifier: testIdentifier1,
@@ -108,12 +108,12 @@ describe('APIController', () => {
             });
         });
 
-        test('kastar FunctionNotFoundError vid test av icke-existerande funktion', async () => {
-            await expect(controller.testFunction('icke-existerande-id'))
+        test('throws FunctionNotFoundError when testing non-existent function', async () => {
+            await expect(controller.testFunction('non-existent-id'))
                 .rejects.toThrow(FunctionNotFoundError);
         });
 
-        test('kastar FunctionExecutionError när mockache inte är initialiserad', async () => {
+        test('throws FunctionExecutionError when mockache is not initialized', async () => {
             const controllerWithoutMockache = new APIController();
             await controllerWithoutMockache.initialize();
             
@@ -122,23 +122,23 @@ describe('APIController', () => {
         });
     });
 
-    describe('Ta bort funktioner', () => {
-        test('tar bort funktionerna', async () => {
-            // Ta bort första funktionen
+    describe('Remove functions', () => {
+        test('removes the functions', async () => {
+            // Remove first function
             await controller.removeFunction(testIdentifier1);
 
-            // Ta bort andra funktionen
+            // Remove second function
             await controller.removeFunction(testIdentifier2);
         });
 
-        test('verifierar att funktionerna är borta', async () => {
-            // Kontrollera att get kastar FunctionNotFoundError
+        test('verifies that the functions are gone', async () => {
+            // Check that get throws FunctionNotFoundError
             await expect(controller.getFunction(testIdentifier1))
                 .rejects.toThrow(FunctionNotFoundError);
             await expect(controller.getFunction(testIdentifier2))
                 .rejects.toThrow(FunctionNotFoundError);
 
-            // Kontrollera att run kastar FunctionNotFoundError
+            // Check that run throws FunctionNotFoundError
             await expect(controller.runFunction(testIdentifier1, { test: 1 }))
                 .rejects.toThrow(FunctionNotFoundError);
             await expect(controller.runFunction(testIdentifier2, { test: 2 }))

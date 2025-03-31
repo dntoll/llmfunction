@@ -65,12 +65,12 @@ The API returns the following HTTP status codes:
 
 ## API Endpoints
 
-### Skapa en funktion
+### Create a Function
 ```bash
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Konvertera Celsius till Fahrenheit",
+    "prompt": "Convert Celsius to Fahrenheit",
     "exampleOutput": {
         "fahrenheit": 32
     },
@@ -84,35 +84,35 @@ curl -X POST \
   http://localhost:3000/llmfunction/create
 ```
 
-### Hämta en funktion
+### Get a Function
 ```bash
 curl http://localhost:3000/llmfunction/get/:identifier
 ```
 
-### Lista alla funktioner
+### List All Functions
 ```bash
 curl http://localhost:3000/llmfunction/list
 ```
 
-### Ta bort en funktion
+### Remove a Function
 ```bash
 curl -X DELETE http://localhost:3000/llmfunction/remove/:identifier
 ```
 
-### Köra alla exempel på en funktion
+### Run All Examples for a Function
 ```bash
 curl -X POST http://localhost:3000/llmfunction/test/:identifier
 ```
 
-Detta kommer att köra alla exempel som är definierade för funktionen och returnera en testrapport med följande information:
-- Totalt antal tester
-- Antal lyckade tester
-- Antal misslyckade tester
-- Detaljerad information för varje test, inklusive:
-  - Indata
-  - Förväntad utdata
-  - Faktisk utdata
-  - Om testet lyckades eller misslyckades
+This will run all examples defined for the function and return a test report with the following information:
+- Total number of tests
+- Number of successful tests
+- Number of failed tests
+- Detailed information for each test, including:
+  - Input
+  - Expected output
+  - Actual output
+  - Whether the test passed or failed
 
 ## Lagring
 

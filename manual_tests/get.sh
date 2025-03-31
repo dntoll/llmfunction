@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Kontrollera att identifier är angiven
+# Check if identifier is provided
 if [ -z "$1" ]; then
-    echo "Användning: $0 <identifier>"
-    echo "Exempel: $0 abc123..."
+    echo "Usage: $0 <identifier>"
     exit 1
 fi
 
-# Hämta funktionen
-echo "Hämtar funktion med identifier: $1"
+# Get the function
+echo "Getting function with identifier: $1"
 
-curl -s http://localhost:3000/llmfunction/get/$1
+curl -s -X GET \
+  http://localhost:3000/llmfunction/get/$1
 
 echo -e "\n" 

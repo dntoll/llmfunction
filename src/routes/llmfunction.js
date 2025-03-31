@@ -3,7 +3,7 @@ const router = express.Router();
 const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
 
 function setupRoutes(app, controller) {
-    // POST endpoint för llmfunction/create
+    // POST endpoint for llmfunction/create
     app.post('/llmfunction/create', async (req, res) => {
         try {
             const result = await controller.createFunction(req.body);
@@ -17,7 +17,7 @@ function setupRoutes(app, controller) {
         }
     });
 
-    // GET endpoint för llmfunction/get
+    // GET endpoint for llmfunction/get
     app.get('/llmfunction/get/:identifier', async (req, res) => {
         try {
             const result = await controller.getFunction(req.params.identifier);
@@ -31,7 +31,7 @@ function setupRoutes(app, controller) {
         }
     });
 
-    // POST endpoint för llmfunction/run
+    // POST endpoint for llmfunction/run
     app.post('/llmfunction/run/:identifier', async (req, res) => {
         try {
             const result = await controller.runFunction(req.params.identifier, req.body);
@@ -47,7 +47,7 @@ function setupRoutes(app, controller) {
         }
     });
 
-    // GET endpoint för llmfunction/list
+    // GET endpoint for llmfunction/list
     app.get('/llmfunction/list', async (req, res) => {
         try {
             const result = await controller.listFunctions();
@@ -57,7 +57,7 @@ function setupRoutes(app, controller) {
         }
     });
 
-    // DELETE endpoint för llmfunction/remove
+    // DELETE endpoint for llmfunction/remove
     app.delete('/llmfunction/remove/:identifier', async (req, res) => {
         try {
             await controller.removeFunction(req.params.identifier);
@@ -71,7 +71,7 @@ function setupRoutes(app, controller) {
         }
     });
 
-    // POST endpoint för llmfunction/test
+    // POST endpoint for llmfunction/test
     app.post('/llmfunction/test/:identifier', async (req, res) => {
         try {
             const result = await controller.testFunction(req.params.identifier);

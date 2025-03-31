@@ -1,66 +1,66 @@
 #!/bin/bash
 
-# Färger för output
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Kontrollera att identifier är angiven
+# Check if identifier is provided
 if [ -z "$1" ]; then
-    echo -e "${RED}Fel: Ingen identifier angiven${NC}"
-    echo -e "Användning: $0 <identifier>"
-    echo -e "Exempel: $0 abc123..."
+    echo -e "${RED}Error: No identifier provided${NC}"
+    echo -e "Usage: $0 <identifier>"
+    echo -e "Example: $0 abc123..."
     exit 1
 fi
 
-# Hämta funktionen
-echo -e "${YELLOW}Kör tester för funktion med identifier: $1${NC}"
+# Get the function
+echo -e "${YELLOW}Running tests for function with identifier: $1${NC}"
 echo -e "----------------------------------------"
 
-# Kör testet och spara resultatet
+# Run the test and save the result
 result=$(curl -s -X POST -H "Content-Type: application/json" http://localhost:3000/llmfunction/test/$1)
 
-# Kontrollera om anropet lyckades
+# Check if the request was successful
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Fel: Kunde inte nå servern${NC}"
+    echo -e "${RED}Error: Could not reach server${NC}"
     exit 1
 fi
 
-# Extrahera värden från JSON
+# Extract values from JSON
 total=$(echo "$result" | grep -o '"totalTests":[0-9]*' | cut -d':' -f2)
 passed=$(echo "$result" | grep -o '"passedTests":[0-9]*' | cut -d':' -f2)
 failed=$(echo "$result" | grep -o '"failedTests":[0-9]*' | cut -d':' -f2)
 
-# Skriv ut sammanfattning
-echo "Totalt antal tester: $total"
-echo "Lyckade tester: $passed"
-echo "Misslyckade tester: $failed"
+# Print summary
+echo "Total number of tests: $total"
+echo "Passed tests: $passed"
+echo "Failed tests: $failed"
 echo ""
 
-# Extrahera och formatera varje testresultat
+# Extract and format each test result
 echo "$result" | grep -o '"results":\[.*\]' | cut -d'[' -f2 | cut -d']' -f1 | sed 's/},{/\n/g' | while read -r line; do
-    # Extrahera status först
+    # Extract status first
     if [[ $line =~ \"success\":(true|false) ]]; then
         success="${BASH_REMATCH[1]}"
         if [ "$success" = "true" ]; then
-            echo -e "${GREEN}✓ Test lyckades${NC}"
+            echo -e "${GREEN}✓ Test passed${NC}"
         else
-            echo -e "${RED}✗ Test misslyckades${NC}"
+            echo -e "${RED}✗ Test failed${NC}"
             
-            # Extrahera och visa input
+            # Extract and display input
             if [[ $line =~ \"input\":\{([^}]*)\} ]]; then
                 input="${BASH_REMATCH[1]}"
                 echo "  Input: {$input}"
             fi
             
-            # Extrahera och visa förväntad utdata
+            # Extract and display expected output
             if [[ $line =~ \"expectedOutput\":\{([^}]*)\} ]]; then
                 expected="${BASH_REMATCH[1]}"
                 echo "  Expected: {$expected}"
             fi
             
-            # Extrahera och visa faktisk utdata
+            # Extract and display actual output
             if [[ $line =~ \"actualOutput\":\{([^}]*)\} ]]; then
                 actual="${BASH_REMATCH[1]}"
                 echo "  Received: {$actual}"
@@ -70,10 +70,10 @@ echo "$result" | grep -o '"results":\[.*\]' | cut -d'[' -f2 | cut -d']' -f1 | se
     fi
 done
 
-# Skriv ut sammanfattning
+# Print summary
 echo -e "----------------------------------------"
 if [ "$failed" -eq 0 ]; then
-    echo -e "${GREEN}Alla tester lyckades!${NC}"
+    echo -e "${GREEN}All tests passed!${NC}"
 else
-    echo -e "${RED}Några tester misslyckades.${NC}"
+    echo -e "${RED}Some tests failed.${NC}"
 fi 

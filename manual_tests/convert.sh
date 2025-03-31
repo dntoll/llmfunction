@@ -1,15 +1,20 @@
 #!/bin/bash
 
-# Kontrollera att identifier är angiven
+# Check if identifier is provided
 if [ -z "$1" ]; then
-    echo "Användning: $0 <identifier>"
-    echo "Exempel: $0 abc123..."
+    echo "Usage: $0 <identifier>"
+    echo "Example: $0 abc123..."
     exit 1
 fi
 
-# Testa temperaturkonvertering
-echo "Testar temperaturkonvertering med identifier: $1"
+# Convert temperature
+echo "Converting temperature with function identifier: $1"
 
-curl -X POST http://localhost:3000/llmfunction/run/$1 \
+curl -s -X POST \
   -H "Content-Type: application/json" \
-  -d '{"celsius": 26}' 
+  -d '{
+    "celsius": 0
+  }' \
+  http://localhost:3000/llmfunction/run/$1
+
+echo -e "\n" 
