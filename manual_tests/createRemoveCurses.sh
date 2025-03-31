@@ -8,12 +8,12 @@ curl -s -X POST \
   -d '{
     "prompt": "Returnera samma text men låt alla fula ord ersättas med 'beeeep': ",
     "exampleOutput": {
-        "correctedText": "Detta är en text som är beeep beeep"
+        "correctedText": "Du är en beep skit"
     },
     "examples": [
         {
             "input": { "text": "Jävla skit" },
-            "output": { "correctedText": "beeeep beeeep" }
+            "output": { "correctedText": "beeeep skit" }
         },
         {
             "input": { "text": "Jag är en snäll text som inte har några fula ord" },
