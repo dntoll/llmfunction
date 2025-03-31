@@ -6,14 +6,14 @@ echo "Creating a function that removes curse words from text"
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Return the same text but replace all curse words with 'beeeep': ",
+    "prompt": "Return the same text but replace all curse words with 'beep': ",
     "exampleOutput": {
-        "correctedText": "You are a beep piece of crap"
+        "correctedText": "beep you!"
     },
     "examples": [
         {
             "input": { "text": "Damn piece of crap" },
-            "output": { "correctedText": "beeeep piece of crap" }
+            "output": { "correctedText": "beep piece of crap" }
         },
         {
             "input": { "text": "I am a nice text without any curse words" },
@@ -21,7 +21,7 @@ curl -s -X POST \
         },
         {
             "input": { "text": "In my text there is one curse word, fuck too!" },
-            "output": { "correctedText": "In my text there is one curse word, beeeep too!" }
+            "output": { "correctedText": "In my text there is one curse word, beep too!" }
         }
     ]
 }' \

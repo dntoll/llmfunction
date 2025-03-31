@@ -63,8 +63,8 @@ class LLMFunction {
 
         const prompt_engineer_prompt = `
         You are a prompt engineer.
-        You are given a prompt and a list of examples.
-        You are to improve the prompt to be more accurate and to cover all the test results.
+        You are given a prompt and a list results from testing the prompt.
+        You are to improve the prompt to be more accurate so for each of the results the output would be more like the expected output.
         `
 
         const input = {
@@ -77,7 +77,7 @@ class LLMFunction {
         }
         const improvedPrompt = await mockache.gpt4SingleMessage(prompt_engineer_prompt, input, exampleOutput);
         //set prompt to improved prompt
-        this.prompt = improvedPrompt;
+        this.prompt = improvedPrompt.prompt;
 
         console.log("Improved prompt: " + improvedPrompt);
         this.identifier = this.#generateIdentifier();

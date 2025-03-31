@@ -4,11 +4,31 @@ A RESTful API for managing LLM functions with persistent storage.
 
 ## Installation
 
+Dependencie
+```bash
+sudo apt install npm 
+sudo apt install curl
+```
+
+
 1. Clone the repository
 2. Install dependencies:
 ```bash
 npm install
 ```
+3. setup .env
+```bash
+touch .env
+
+
+CACHE_SERVER=<your_cache_server_url>
+OPENAI_API_KEY_2=<your_openai_api_key>
+OPENAI_API_ORG=<your_openai_org_id>
+
+
+
+```
+
 
 ## Usage
 
