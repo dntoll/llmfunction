@@ -153,6 +153,17 @@ export function FunctionPage() {
         </div>
       </div>
 
+      {(runMutation.data || testMutation.data || improveMutation.data) && (
+        <div className="bg-white shadow rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Resultat</h2>
+          <div className="bg-gray-50 p-4 rounded-md">
+            <pre className="whitespace-pre-wrap text-sm text-gray-700">
+              {renderResult(runMutation.data || testMutation.data || improveMutation.data)}
+            </pre>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
           onClick={() => testMutation.mutate()}
@@ -169,15 +180,6 @@ export function FunctionPage() {
           {improveMutation.isPending ? 'Förbättrar...' : 'Förbättra funktion'}
         </button>
       </div>
-
-      {(runMutation.data || testMutation.data || improveMutation.data) && (
-        <div className="mt-8 bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Resultat</h2>
-          <pre className="bg-gray-50 p-4 rounded-md overflow-auto whitespace-pre-wrap">
-            {renderResult(runMutation.data || testMutation.data || improveMutation.data)}
-          </pre>
-        </div>
-      )}
     </div>
   );
 } 
