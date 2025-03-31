@@ -82,8 +82,8 @@ export function FunctionPage() {
     <div className="max-w-4xl mx-auto py-8">
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{func.name}</h1>
-          <p className="text-gray-600">Skapad: {new Date(func.created_at).toLocaleDateString()}</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{func.prompt}</h1>
+          <p className="text-gray-600">ID: {func.identifier}</p>
         </div>
         <div className="flex gap-4">
           <button
@@ -93,7 +93,7 @@ export function FunctionPage() {
             Tillbaka
           </button>
           <button
-            onClick={() => removeMutation.mutate(func.id)}
+            onClick={() => removeMutation.mutate(func.identifier)}
             className="px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50"
           >
             Ta bort
@@ -113,11 +113,15 @@ export function FunctionPage() {
             <div key={index} className="border rounded-md p-4">
               <div className="mb-2">
                 <span className="font-medium text-gray-700">Input:</span>
-                <p className="mt-1 text-gray-600">{example.input}</p>
+                <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
+                  {JSON.stringify(example.input, null, 2)}
+                </pre>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Output:</span>
-                <p className="mt-1 text-gray-600">{example.output}</p>
+                <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
+                  {JSON.stringify(example.output, null, 2)}
+                </pre>
               </div>
             </div>
           ))}
@@ -140,7 +144,7 @@ export function FunctionPage() {
             />
           </div>
           <button
-            onClick={() => runMutation.mutate({ input })}
+            onClick={() => runMutation.mutate({ input: JSON.parse(input) })}
             disabled={runMutation.isPending || !input.trim()}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >

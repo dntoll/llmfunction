@@ -41,7 +41,7 @@ export function HomePage() {
       {functions && functions.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {functions.map((func) => (
-            <FunctionCard key={func.id} func={func} />
+            <FunctionCard key={func.identifier} func={func} />
           ))}
         </div>
       ) : (
