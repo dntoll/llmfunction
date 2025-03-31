@@ -87,7 +87,6 @@ function setupRoutes(app, controller) {
         }
     });
 
-    // POST endpoint för llmfunction/improve
     app.post('/llmfunction/improve/:identifier', async (req, res) => {
         try {
             const result = await controller.improveFunction(req.params.identifier);

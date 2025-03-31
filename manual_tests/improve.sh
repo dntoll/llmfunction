@@ -12,4 +12,4 @@ echo "Förbättrar prompt för funktion med identifier: $1"
 
 curl -X POST -s http://localhost:3000/llmfunction/improve/$1
 
-echo -e "\n" 
+echo -e "\n"

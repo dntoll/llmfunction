@@ -112,7 +112,7 @@ class APIController {
         
         return {
             message: 'Prompt förbättrad',
-            newPrompt: llmFunction.prompt
+            newPrompt: llmFunction.identifier
         };
     }
 }

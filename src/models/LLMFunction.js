@@ -51,9 +51,9 @@ class LLMFunction {
         };
     }
 
-    run(mockache, inputJson) {
-        const ret = mockache.gpt4SingleMessage(this.prompt, inputJson, this.exampleOutput);
-        return ret
+    async run(mockache, inputJson) {
+        const ret = await mockache.gpt4SingleMessage(this.prompt, inputJson, this.exampleOutput);
+        return ret;
     }
 
     async improvePrompt(mockache) {
