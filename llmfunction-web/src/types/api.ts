@@ -1,23 +1,39 @@
 export interface Example {
-  input: Record<string, any>;
-  output: Record<string, any>;
+  input: string;
+  output: string;
 }
 
 export interface LLMFunction {
-  identifier: string;
+  id: string;
+  name: string;
   prompt: string;
-  exampleOutput: Record<string, any>;
+  example_output: string;
   examples: Example[];
+  created_at: string;
 }
 
 export interface CreateFunctionRequest {
   prompt: string;
-  exampleOutput: Record<string, any>;
+  example_output: string;
   examples: Example[];
 }
 
 export interface RunFunctionRequest {
-  input: Record<string, any>;
+  input: string;
+}
+
+export interface RunFunctionResponse {
+  output: string;
+}
+
+export interface TestFunctionResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ImproveFunctionResponse {
+  improved_prompt: string;
+  improved_examples: Example[];
 }
 
 export interface TestResult {

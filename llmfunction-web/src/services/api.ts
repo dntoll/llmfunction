@@ -1,45 +1,124 @@
 import axios from 'axios';
-import type { LLMFunction, CreateFunctionRequest, RunFunctionRequest, TestResult } from '../types/api';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import type { AxiosError } from 'axios';
+import type {
+  LLMFunction,
+  CreateFunctionRequest,
+  RunFunctionRequest,
+  RunFunctionResponse,
+  TestFunctionResponse,
+  ImproveFunctionResponse,
+} from '../types/api';
 
 const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 5000, // 5 sekunders timeout
 });
 
-export const createFunction = async (data: CreateFunctionRequest): Promise<LLMFunction> => {
-  const response = await api.post('/llmfunction/create', data);
-  return response.data;
+interface ErrorResponse {
+  message: string;
+  error?: string;
+}
+
+const handleError = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<ErrorResponse>;
+    
+    // Kontrollera om API:et är tillgängligt
+    if (!import.meta.env.VITE_API_URL) {
+      throw new Error('API URL saknas. Kontrollera att VITE_API_URL är satt i .env-filen.');
+    }
+
+    if (axiosError.code === 'ECONNREFUSED') {
+      throw new Error(`Kunde inte nå API:et på ${import.meta.env.VITE_API_URL}. Kontrollera att servern körs.`);
+    }
+
+    if (axiosError.code === 'ETIMEDOUT') {
+      throw new Error('API:et svarade inte inom förväntad tid. Kontrollera att servern är tillgänglig.');
+    }
+
+    if (axiosError.response) {
+      // Server svarade med ett felstatus
+      const errorMessage = axiosError.response.data?.message || 
+                          axiosError.response.data?.error || 
+                          axiosError.response.statusText ||
+                          'Ett fel uppstod på servern';
+      throw new Error(`${errorMessage} (Status: ${axiosError.response.status})`);
+    } else if (axiosError.request) {
+      // Ingen respons mottogs
+      throw new Error(`Kunde inte nå API:et på ${import.meta.env.VITE_API_URL}. Kontrollera att servern körs.`);
+    } else {
+      // Ett fel uppstod när förfrågan konfigurerades
+      throw new Error('Ett fel uppstod när förfrågan konfigurerades');
+    }
+  }
+  throw error;
 };
 
-export const getFunction = async (identifier: string): Promise<LLMFunction> => {
-  const response = await api.get(`/llmfunction/get/${identifier}`);
-  return response.data;
-};
+export async function createFunction(data: CreateFunctionRequest): Promise<LLMFunction> {
+  try {
+    const response = await api.post<LLMFunction>('/llmfunction/create', data);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
 
-export const listFunctions = async (): Promise<LLMFunction[]> => {
-  const response = await api.get('/llmfunction/list');
-  return response.data;
-};
+export async function getFunction(id: string): Promise<LLMFunction> {
+  try {
+    const response = await api.get<LLMFunction>(`/llmfunction/get/${id}`);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
 
-export const removeFunction = async (identifier: string): Promise<void> => {
-  await api.delete(`/llmfunction/remove/${identifier}`);
-};
+export async function listFunctions(): Promise<LLMFunction[]> {
+  try {
+    const response = await api.get<LLMFunction[]>('/llmfunction/list');
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
 
-export const runFunction = async (identifier: string, data: RunFunctionRequest): Promise<any> => {
-  const response = await api.post(`/llmfunction/run/${identifier}`, data);
-  return response.data;
-};
+export async function removeFunction(id: string): Promise<void> {
+  try {
+    await api.delete(`/llmfunction/remove/${id}`);
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
 
-export const testFunction = async (identifier: string): Promise<TestResult> => {
-  const response = await api.post(`/llmfunction/test/${identifier}`);
-  return response.data;
-};
+export async function runFunction(id: string, data: RunFunctionRequest): Promise<RunFunctionResponse> {
+  try {
+    const response = await api.post<RunFunctionResponse>(`/llmfunction/run/${id}`, data);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
 
-export const improveFunction = async (identifier: string): Promise<{ message: string; newPrompt: string }> => {
-  const response = await api.post(`/llmfunction/improve/${identifier}`);
-  return response.data;
-}; 
+export async function testFunction(id: string): Promise<TestFunctionResponse> {
+  try {
+    const response = await api.post<TestFunctionResponse>(`/llmfunction/test/${id}`);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
+
+export async function improveFunction(id: string): Promise<ImproveFunctionResponse> {
+  try {
+    const response = await api.post<ImproveFunctionResponse>(`/llmfunction/improve/${id}`);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+} 
