@@ -79,7 +79,7 @@ class LLMFunction {
         `
 
         const input = {
-            old_prompt: this.initialPrompt,
+            old_prompt: this.prompt,
             test_results: results
         }
 

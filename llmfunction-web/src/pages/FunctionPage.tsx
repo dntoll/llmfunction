@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFunction, removeFunction, runFunction, testFunction, improveFunction } from '../services/api';
-import type { LLMFunction, RunFunctionRequest } from '../types/api';
+import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction } from '../services/api';
+import type { RunFunctionRequest, TestCase } from '../types/api';
 import { useState } from 'react';
 
 export function FunctionPage() {
@@ -9,8 +9,14 @@ export function FunctionPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [input, setInput] = useState('');
+  const [newTestInput, setNewTestInput] = useState('');
+  const [newTestOutput, setNewTestOutput] = useState('');
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editTestInput, setEditTestInput] = useState('');
+  const [editTestOutput, setEditTestOutput] = useState('');
 
-  const { data: func, isLoading, error } = useQuery({
+  const { data: func, isLoading } = useQuery({
     queryKey: ['function', id],
     queryFn: () => getFunction(id!),
   });
@@ -38,6 +44,33 @@ export function FunctionPage() {
     },
   });
 
+  const addTestMutation = useMutation({
+    mutationFn: (testCase: TestCase) => addTestToFunction(id!, testCase),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['function', id] });
+      setNewTestInput('');
+      setNewTestOutput('');
+    },
+  });
+
+  const removeTestMutation = useMutation({
+    mutationFn: (index: number) => removeTestFromFunction(id!, index),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['function', id] });
+    },
+  });
+
+  const updateTestMutation = useMutation({
+    mutationFn: ({ index, testCase }: { index: number; testCase: TestCase }) => 
+      updateTestInFunction(id!, index, testCase),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['function', id] });
+      setEditingIndex(null);
+      setEditTestInput('');
+      setEditTestOutput('');
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -46,7 +79,7 @@ export function FunctionPage() {
     );
   }
 
-  if (error || !func) {
+  if (!func) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-red-600 mb-4">Ett fel uppstod</h2>
@@ -55,7 +88,7 @@ export function FunctionPage() {
     );
   }
 
-  const renderResult = (data: any) => {
+  const renderResult = (data: unknown) => {
     if (!data) return null;
 
     if (typeof data === 'string') {
@@ -64,18 +97,76 @@ export function FunctionPage() {
 
     if (typeof data === 'object') {
       if ('text' in data) {
-        return data.text;
+        return (data as { text: string }).text;
       }
       if ('message' in data) {
-        return data.message;
+        return (data as { message: string }).message;
       }
       if ('output' in data) {
-        return data.output;
+        return (data as { output: unknown }).output;
       }
       return JSON.stringify(data, null, 2);
     }
 
     return String(data);
+  };
+
+  const handleAddTest = () => {
+    setJsonError(null);
+    try {
+      const inputObj = JSON.parse(newTestInput) as Record<string, unknown>;
+      const outputObj = JSON.parse(newTestOutput) as Record<string, unknown>;
+      
+      if (typeof inputObj !== 'object' || inputObj === null) {
+        throw new Error('Input måste vara ett JSON-objekt');
+      }
+      if (typeof outputObj !== 'object' || outputObj === null) {
+        throw new Error('Output måste vara ett JSON-objekt');
+      }
+
+      addTestMutation.mutate({ input: inputObj, output: outputObj });
+    } catch (err) {
+      const error = err as Error;
+      setJsonError(error.message);
+    }
+  };
+
+  const handleEditTest = (index: number, example: TestCase) => {
+    setEditingIndex(index);
+    setEditTestInput(JSON.stringify(example.input, null, 2));
+    setEditTestOutput(JSON.stringify(example.output, null, 2));
+  };
+
+  const handleUpdateTest = () => {
+    if (editingIndex === null) return;
+
+    setJsonError(null);
+    try {
+      const inputObj = JSON.parse(editTestInput) as Record<string, unknown>;
+      const outputObj = JSON.parse(editTestOutput) as Record<string, unknown>;
+      
+      if (typeof inputObj !== 'object' || inputObj === null) {
+        throw new Error('Input måste vara ett JSON-objekt');
+      }
+      if (typeof outputObj !== 'object' || outputObj === null) {
+        throw new Error('Output måste vara ett JSON-objekt');
+      }
+
+      updateTestMutation.mutate({ 
+        index: editingIndex, 
+        testCase: { input: inputObj, output: outputObj } 
+      });
+    } catch (err) {
+      const error = err as Error;
+      setJsonError(error.message);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setEditTestInput('');
+    setEditTestOutput('');
+    setJsonError(null);
   };
 
   return (
@@ -111,20 +202,143 @@ export function FunctionPage() {
         <div className="space-y-4">
           {func.examples.map((example, index) => (
             <div key={index} className="border rounded-md p-4">
-              <div className="mb-2">
-                <span className="font-medium text-gray-700">Input:</span>
-                <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
-                  {JSON.stringify(example.input, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Output:</span>
-                <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
-                  {JSON.stringify(example.output, null, 2)}
-                </pre>
-              </div>
+              {editingIndex === index ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Input (JSON)
+                    </label>
+                    <textarea
+                      value={editTestInput}
+                      onChange={(e) => {
+                        setEditTestInput(e.target.value);
+                        setJsonError(null);
+                      }}
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                        jsonError ? 'border-red-500' : ''
+                      }`}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Output (JSON)
+                    </label>
+                    <textarea
+                      value={editTestOutput}
+                      onChange={(e) => {
+                        setEditTestOutput(e.target.value);
+                        setJsonError(null);
+                      }}
+                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                        jsonError ? 'border-red-500' : ''
+                      }`}
+                      rows={3}
+                    />
+                  </div>
+                  {jsonError && (
+                    <p className="text-sm text-red-600">{jsonError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleUpdateTest}
+                      disabled={updateTestMutation.isPending}
+                      className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {updateTestMutation.isPending ? 'Sparar...' : 'Spara'}
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      Avbryt
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-2">
+                    <span className="font-medium text-gray-700">Input:</span>
+                    <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
+                      {JSON.stringify(example.input, null, 2)}
+                    </pre>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Output:</span>
+                    <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
+                      {JSON.stringify(example.output, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => handleEditTest(index, example)}
+                      className="px-3 py-1 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50"
+                    >
+                      Redigera
+                    </button>
+                    <button
+                      onClick={() => removeTestMutation.mutate(index)}
+                      className="px-3 py-1 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50"
+                    >
+                      Ta bort
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Lägg till testfall</h2>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="newTestInput" className="block text-sm font-medium text-gray-700">
+              Input (JSON)
+            </label>
+            <textarea
+              id="newTestInput"
+              value={newTestInput}
+              onChange={(e) => {
+                setNewTestInput(e.target.value);
+                setJsonError(null);
+              }}
+              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                jsonError ? 'border-red-500' : ''
+              }`}
+              rows={3}
+              placeholder='{"test": 1}'
+            />
+            {jsonError && (
+              <p className="mt-1 text-sm text-red-600">{jsonError}</p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="newTestOutput" className="block text-sm font-medium text-gray-700">
+              Output (JSON)
+            </label>
+            <textarea
+              id="newTestOutput"
+              value={newTestOutput}
+              onChange={(e) => {
+                setNewTestOutput(e.target.value);
+                setJsonError(null);
+              }}
+              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                jsonError ? 'border-red-500' : ''
+              }`}
+              rows={3}
+              placeholder='{"result": "test"}'
+            />
+          </div>
+          <button
+            onClick={handleAddTest}
+            disabled={addTestMutation.isPending || !newTestInput.trim() || !newTestOutput.trim()}
+            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+          >
+            {addTestMutation.isPending ? 'Lägger till...' : 'Lägg till testfall'}
+          </button>
         </div>
       </div>
 
@@ -153,12 +367,12 @@ export function FunctionPage() {
         </div>
       </div>
 
-      {(runMutation.data || testMutation.data || improveMutation.data) && (
+      {(runMutation.data || testMutation.data || improveMutation.data || addTestMutation.data) && (
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Resultat</h2>
           <div className="bg-gray-50 p-4 rounded-md">
             <pre className="whitespace-pre-wrap text-sm text-gray-700">
-              {renderResult(runMutation.data || testMutation.data || improveMutation.data)}
+              {renderResult(runMutation.data || testMutation.data || improveMutation.data || addTestMutation.data)}
             </pre>
           </div>
         </div>

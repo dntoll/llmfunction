@@ -3,11 +3,16 @@ export interface Example {
   output: Record<string, any>;
 }
 
+export interface TestCase {
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+}
+
 export interface LLMFunction {
   identifier: string;
   prompt: string;
-  exampleOutput: Record<string, any>;
-  examples: Example[];
+  exampleOutput: Record<string, unknown>;
+  examples: TestCase[];
 }
 
 export interface CreateFunctionRequest {

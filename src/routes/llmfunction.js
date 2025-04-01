@@ -101,6 +101,51 @@ function setupRoutes(app, controller) {
             }
         }
     });
+
+    app.post('/llmfunction/add-test/:identifier', async (req, res) => {
+        try {
+            const result = await controller.addTestToFunction(req.params.identifier, req.body);
+            res.json(result);
+        } catch (error) {
+            if (error instanceof FunctionNotFoundError) {
+                res.status(404).json({ error: error.message });
+            } else if (error instanceof FunctionValidationError) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    });
+
+    app.delete('/llmfunction/remove-test/:identifier/:index', async (req, res) => {
+        try {
+            const result = await controller.removeTestFromFunction(req.params.identifier, parseInt(req.params.index));
+            res.json(result);
+        } catch (error) {
+            if (error instanceof FunctionNotFoundError) {
+                res.status(404).json({ error: error.message });
+            } else if (error instanceof FunctionValidationError) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    });
+
+    app.put('/llmfunction/update-test/:identifier/:index', async (req, res) => {
+        try {
+            const result = await controller.updateTestInFunction(req.params.identifier, parseInt(req.params.index), req.body);
+            res.json(result);
+        } catch (error) {
+            if (error instanceof FunctionNotFoundError) {
+                res.status(404).json({ error: error.message });
+            } else if (error instanceof FunctionValidationError) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    });
 }
 
 module.exports = { setupRoutes }; 

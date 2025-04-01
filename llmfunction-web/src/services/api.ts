@@ -7,6 +7,7 @@ import type {
   RunFunctionResponse,
   TestFunctionResponse,
   ImproveFunctionResponse,
+  TestCase,
 } from '../types/api';
 
 const api = axios.create({
@@ -116,6 +117,36 @@ export async function testFunction(id: string): Promise<TestFunctionResponse> {
 export async function improveFunction(id: string): Promise<ImproveFunctionResponse> {
   try {
     const response = await api.post<ImproveFunctionResponse>(`/llmfunction/improve/${id}`);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
+
+export async function addTestToFunction(id: string, testCase: TestCase): Promise<LLMFunction> {
+  try {
+    const response = await api.post<LLMFunction>(`/llmfunction/add-test/${id}`, testCase);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
+
+export async function removeTestFromFunction(id: string, index: number): Promise<LLMFunction> {
+  try {
+    const response = await api.delete<LLMFunction>(`/llmfunction/remove-test/${id}/${index}`);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
+
+export async function updateTestInFunction(id: string, index: number, testCase: TestCase): Promise<LLMFunction> {
+  try {
+    const response = await api.put<LLMFunction>(`/llmfunction/update-test/${id}/${index}`, testCase);
     return response.data;
   } catch (error) {
     handleError(error);

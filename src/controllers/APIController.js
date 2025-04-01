@@ -108,7 +108,101 @@ class APIController {
         
         return {
             message: 'Prompt improved',
-            newPrompt: newLLMFunction.prompt
+            newPrompt: newLLMFunction.prompt,
+            identifier: newLLMFunction.identifier
+        };
+    }
+
+    async addTestToFunction(identifier, testCase) {
+        if (!this.initialized) await this.initialize();
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+
+        // Validera testCase
+        if (!testCase.input || typeof testCase.input !== 'object') {
+            throw new FunctionValidationError('Test case must have a valid input object');
+        }
+        if (!testCase.output || typeof testCase.output !== 'object') {
+            throw new FunctionValidationError('Test case must have a valid output object');
+        }
+
+        const llmFunction = LLMFunction.fromJSON(data);
+        llmFunction.examples.push(testCase);
+
+        // Save the updated function
+        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        
+        return {
+            message: 'Test case added successfully',
+            identifier: llmFunction.identifier,
+            data: llmFunction.toJSON()
+        };
+    }
+
+    async removeTestFromFunction(identifier, index) {
+        if (!this.initialized) await this.initialize();
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+
+        const llmFunction = LLMFunction.fromJSON(data);
+        
+        // Validera index
+        if (index < 0 || index >= llmFunction.examples.length) {
+            throw new FunctionValidationError('Invalid test case index');
+        }
+
+        // Ta bort testfallet
+        llmFunction.examples.splice(index, 1);
+
+        // Save the updated function
+        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        
+        return {
+            message: 'Test case removed successfully',
+            identifier: llmFunction.identifier,
+            data: llmFunction.toJSON()
+        };
+    }
+
+    async updateTestInFunction(identifier, index, testCase) {
+        if (!this.initialized) await this.initialize();
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+
+        // Validera testCase
+        if (!testCase.input || typeof testCase.input !== 'object') {
+            throw new FunctionValidationError('Test case must have a valid input object');
+        }
+        if (!testCase.output || typeof testCase.output !== 'object') {
+            throw new FunctionValidationError('Test case must have a valid output object');
+        }
+
+        const llmFunction = LLMFunction.fromJSON(data);
+        
+        // Validera index
+        if (index < 0 || index >= llmFunction.examples.length) {
+            throw new FunctionValidationError('Invalid test case index');
+        }
+
+        // Uppdatera testfallet
+        llmFunction.examples[index] = testCase;
+
+        // Save the updated function
+        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        
+        return {
+            message: 'Test case updated successfully',
+            identifier: llmFunction.identifier,
+            data: llmFunction.toJSON()
         };
     }
 }
