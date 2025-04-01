@@ -11,6 +11,13 @@ const mockMockache = {
     }
 };
 
+// Create a mock version of Mockache for improved prompt tests
+const mockMockacheWithImprovedPrompt = {
+    gpt4SingleMessage: (prompt, input) => {
+        return { prompt: "new improved prompt" };
+    }
+};
+
 // Create a test app
 const app = express();
 app.use(express.json());
@@ -71,7 +78,7 @@ describe('API Tests', () => {
                     // Missing exampleOutput and examples
                 });
             expect(response.status).toBe(400);
-            expect(response.body.error).toContain('Missing required fields');
+            expect(response.body.error).toContain('ExampleOutput must be a json object');
         });
 
         test('retrieves the created functions', async () => {
@@ -222,10 +229,20 @@ describe('API Tests', () => {
 
     describe('Improve functions', () => {
         let improveTestIdentifier;
+        let improveController;
+        let testApp;
 
         beforeEach(async () => {
+            // Create a new app with the improved prompt mock
+            testApp = express();
+            testApp.use(express.json());
+            improveController = new APIController(mockMockacheWithImprovedPrompt);
+            await improveController.initialize();
+            testApp.locals.apiController = improveController;
+            setupRoutes(testApp, improveController);
+
             // Create a function to improve
-            const response = await request(app)
+            const response = await request(testApp)
                 .post('/llmfunction/create')
                 .send({
                     prompt: "Test function to improve",
@@ -239,18 +256,18 @@ describe('API Tests', () => {
         });
 
         test('improves a function successfully', async () => {
-            const response = await request(app)
+            const response = await request(testApp)
                 .post(`/llmfunction/improve/${improveTestIdentifier}`);
 
             expect(response.status).toBe(200);
             expect(response.body).toMatchObject({
                 message: 'Prompt improved',
-                newPrompt: expect.any(String)
+                newPrompt: "new improved prompt"
             });
         });
 
         test('returns 404 when improving non-existent function', async () => {
-            const response = await request(app)
+            const response = await request(testApp)
                 .post('/llmfunction/improve/non-existent-id');
 
             expect(response.status).toBe(404);
@@ -259,14 +276,14 @@ describe('API Tests', () => {
 
         test('returns 400 when mockache is not initialized', async () => {
             // Create a new app with a controller without mockache
-            const testApp = express();
-            testApp.use(express.json());
+            const testAppWithoutMockache = express();
+            testAppWithoutMockache.use(express.json());
             const controllerWithoutMockache = new APIController();
             await controllerWithoutMockache.initialize();
-            testApp.locals.apiController = controllerWithoutMockache;
-            setupRoutes(testApp, controllerWithoutMockache);
+            testAppWithoutMockache.locals.apiController = controllerWithoutMockache;
+            setupRoutes(testAppWithoutMockache, controllerWithoutMockache);
 
-            const response = await request(testApp)
+            const response = await request(testAppWithoutMockache)
                 .post(`/llmfunction/improve/${improveTestIdentifier}`);
 
             expect(response.status).toBe(400);
@@ -275,7 +292,7 @@ describe('API Tests', () => {
 
         afterEach(async () => {
             // Clean up by removing the test function
-            await request(app)
+            await request(testApp)
                 .delete(`/llmfunction/remove/${improveTestIdentifier}`);
         });
     });

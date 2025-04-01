@@ -24,10 +24,6 @@ class APIController {
     async createFunction(data) {
         if (!this.initialized) await this.initialize();
         
-        if (!LLMFunction.validate(data)) {
-            throw new FunctionValidationError('Missing required fields. Please check that prompt, exampleOutput, and examples are included.');
-        }
-
         const llmFunction = LLMFunction.fromJSON(data);
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
 
@@ -105,14 +101,14 @@ class APIController {
             throw new FunctionNotFoundError(identifier);
         }
         const llmFunction = LLMFunction.fromJSON(data);
-        await llmFunction.improvePrompt(this.mockache);
-        
+        const newLLMFunction = await llmFunction.improvePrompt(this.mockache);
+
         // Save the updated function
-        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        await this.storageService.saveFunction(newLLMFunction.identifier, newLLMFunction.toJSON());
         
         return {
             message: 'Prompt improved',
-            newPrompt: llmFunction.identifier
+            newPrompt: newLLMFunction.prompt
         };
     }
 }

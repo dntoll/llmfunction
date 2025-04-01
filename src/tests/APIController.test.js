@@ -4,7 +4,7 @@ const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError }
 // Create a mock version of Mockache that only returns test data
 const mockMockache = {
     gpt4SingleMessage: (prompt, input) => {
-        return { result: "test" };
+        return { result: "testu" };
     }
 };
 

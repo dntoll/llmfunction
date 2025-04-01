@@ -1,10 +1,36 @@
+const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
+
 const crypto = require('crypto');
 
 class LLMFunction {
 
 
-    constructor(prompt, initialPrompt, exampleOutput, examples) {
-        this.initialPrompt = initialPrompt;
+    constructor(prompt, exampleOutput, examples) {
+        // Validera prompt
+        if (!prompt || typeof prompt !== 'string' || prompt.length === 0) {
+            throw new FunctionValidationError('Prompt must be non empty string');
+        }
+
+               // Validera exampleOutput
+        if (!exampleOutput || typeof exampleOutput !== 'object') {
+            throw new FunctionValidationError('ExampleOutput must be a json object');
+        }
+
+        // Validera examples
+        if (!Array.isArray(examples) || examples.length === 0) {
+            throw new FunctionValidationError('Examples must be non empty array');
+        }
+
+        // Validera varje exempel
+        examples.forEach((example, index) => {
+            if (!example.input || typeof example.input !== 'object') {
+                throw new Error(`Exempel ${index} is missing or has invalid input`);
+            }
+            if (!example.output || typeof example.output !== 'object') {
+                throw new Error(`Exempel ${index} is missing or has invalid output`);
+            }
+        });
+
         this.prompt = prompt;
         this.exampleOutput = exampleOutput;
         this.examples = examples;
@@ -12,31 +38,15 @@ class LLMFunction {
     }
 
     static fromJSON(data) {
-        if (!LLMFunction.validate(data)) {
-            throw new Error('Invalid data for LLMFunction');
-        }
-        return new LLMFunction(data.prompt, data.initialPrompt,  data.exampleOutput, data.examples);
+        return new LLMFunction(data.prompt, data.exampleOutput, data.examples);
     }
 
-    static validate(data) {
-        return (
-            data &&
-            typeof data.prompt === 'string' &&
-            data.exampleOutput &&
-            Array.isArray(data.examples) &&
-            data.examples.length > 0 &&
-            data.examples.every(example => 
-                example.input && 
-                example.output &&
-                typeof example.input === 'object' &&
-                typeof example.output === 'object'
-            )
-        );
-    }
+   
 
     #generateIdentifier() {
         const data = JSON.stringify({
             prompt: this.prompt,
+
             exampleOutput: this.exampleOutput,
             examples: this.examples
         });
@@ -46,6 +56,7 @@ class LLMFunction {
     toJSON() {
         return {
             prompt: this.prompt,
+
             exampleOutput: this.exampleOutput,
             examples: this.examples
         };
@@ -77,10 +88,12 @@ class LLMFunction {
         }
         const improvedPrompt = await mockache.gpt4SingleMessage(prompt_engineer_prompt, input, exampleOutput);
         //set prompt to improved prompt
-        this.prompt = improvedPrompt.prompt;
+        //create new object with improved prompt
+        const newLLMFunction = new LLMFunction(improvedPrompt.prompt, this.exampleOutput, this.examples);   
+        //this.prompt = improvedPrompt.prompt;
 
-        console.log("Improved prompt: " + improvedPrompt);
-        this.identifier = this.#generateIdentifier();
+        //console.log("Improved prompt: " + improvedPrompt.prompt);
+        return newLLMFunction;
     }
 
     async runAllExamples(mockache) {
