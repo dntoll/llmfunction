@@ -173,31 +173,46 @@ class APIController {
     async updateTestInFunction(identifier, index, testCase) {
         if (!this.initialized) await this.initialize();
         
+        console.log('Backend: Mottog förfrågan att uppdatera testfall:', { identifier, index, testCase });
+        
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
+            console.log('Backend: Funktion hittades inte:', identifier);
             throw new FunctionNotFoundError(identifier);
         }
 
         // Validera testCase
         if (!testCase.input || typeof testCase.input !== 'object') {
+            console.log('Backend: Ogiltig input i testfall:', testCase);
             throw new FunctionValidationError('Test case must have a valid input object');
         }
         if (!testCase.output || typeof testCase.output !== 'object') {
+            console.log('Backend: Ogiltig output i testfall:', testCase);
             throw new FunctionValidationError('Test case must have a valid output object');
         }
 
         const llmFunction = LLMFunction.fromJSON(data);
+        console.log('Backend: Laddade funktion:', { 
+            identifier: llmFunction.identifier,
+            antalExempel: llmFunction.examples.length 
+        });
         
         // Validera index
         if (index < 0 || index >= llmFunction.examples.length) {
+            console.log('Backend: Ogiltigt index:', { index, maxIndex: llmFunction.examples.length - 1 });
             throw new FunctionValidationError('Invalid test case index');
         }
 
         // Uppdatera testfallet
         llmFunction.examples[index] = testCase;
+        console.log('Backend: Uppdaterade testfall:', { 
+            index,
+            nyttTestfall: testCase 
+        });
 
         // Save the updated function
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        console.log('Backend: Sparade uppdaterad funktion');
         
         return {
             message: 'Test case updated successfully',

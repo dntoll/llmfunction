@@ -61,14 +61,21 @@ export function FunctionPage() {
   });
 
   const updateTestMutation = useMutation({
-    mutationFn: ({ index, testCase }: { index: number; testCase: TestCase }) => 
-      updateTestInFunction(id!, index, testCase),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['function', id] });
+    mutationFn: ({ index, testCase }: { index: number; testCase: TestCase }) => {
+      console.log('Frontend: Skickar uppdatering till servern:', { index, testCase });
+      return updateTestInFunction(id!, index, testCase);
+    },
+    onSuccess: async (data) => {
+      console.log('Frontend: Uppdatering lyckades, data från servern:', data);
+      await queryClient.invalidateQueries({ queryKey: ['function', id] });
+      await queryClient.refetchQueries({ queryKey: ['function', id] });
       setEditingIndex(null);
       setEditTestInput('');
       setEditTestOutput('');
     },
+    onError: (error) => {
+      console.error('Frontend: Fel vid uppdatering:', error);
+    }
   });
 
   if (isLoading) {
@@ -88,8 +95,8 @@ export function FunctionPage() {
     );
   }
 
-  const renderResult = (data: unknown) => {
-    if (!data) return null;
+  const renderResult = (data: unknown): string => {
+    if (!data) return '';
 
     if (typeof data === 'string') {
       return data;
@@ -103,7 +110,7 @@ export function FunctionPage() {
         return (data as { message: string }).message;
       }
       if ('output' in data) {
-        return (data as { output: unknown }).output;
+        return JSON.stringify((data as { output: unknown }).output, null, 2);
       }
       return JSON.stringify(data, null, 2);
     }
@@ -152,12 +159,27 @@ export function FunctionPage() {
         throw new Error('Output måste vara ett JSON-objekt');
       }
 
+      const testCase = { input: inputObj, output: outputObj };
+      console.log('Frontend: Förbereder uppdatering:', { editingIndex, testCase });
+      
+      // Uppdatera lokalt först för bättre UX
+      const updatedExamples = [...func.examples];
+      updatedExamples[editingIndex] = testCase;
+      
+      // Uppdatera cache direkt
+      queryClient.setQueryData(['function', id], {
+        ...func,
+        examples: updatedExamples
+      });
+
+      // Skicka uppdateringen till servern
       updateTestMutation.mutate({ 
         index: editingIndex, 
-        testCase: { input: inputObj, output: outputObj } 
+        testCase 
       });
     } catch (err) {
       const error = err as Error;
+      console.error('Frontend: Fel vid validering:', error);
       setJsonError(error.message);
     }
   };

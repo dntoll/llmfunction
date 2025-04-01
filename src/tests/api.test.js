@@ -367,4 +367,103 @@ describe('API Tests', () => {
                 .delete(`/llmfunction/remove/${testIdentifier}`);
         });
     });
+
+    describe('Update test cases', () => {
+        let testIdentifier;
+
+        beforeEach(async () => {
+            // Create a function to update tests for
+            const response = await request(app)
+                .post('/llmfunction/create')
+                .send({
+                    prompt: "Test function for updating tests",
+                    exampleOutput: { result: "test" },
+                    examples: [
+                        { input: { test: 1 }, output: { result: "test1" } },
+                        { input: { test: 2 }, output: { result: "test2" } }
+                    ]
+                });
+            expect(response.status).toBe(201);
+            testIdentifier = response.body.identifier;
+        });
+
+        test('updates a valid test case successfully', async () => {
+            const updatedTestCase = {
+                input: { test: 1, updated: true },
+                output: { result: "test1", updated: true }
+            };
+
+            const response = await request(app)
+                .put(`/llmfunction/update-test/${testIdentifier}/0`)
+                .send(updatedTestCase);
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Test case updated successfully');
+            expect(response.body.data.examples[0]).toEqual(updatedTestCase);
+            expect(response.body.data.examples[1]).toEqual({
+                input: { test: 2 },
+                output: { result: "test2" }
+            });
+        });
+
+        test('returns 404 when updating test in non-existent function', async () => {
+            const response = await request(app)
+                .put('/llmfunction/update-test/non-existent-id/0')
+                .send({
+                    input: { test: 1 },
+                    output: { result: "test" }
+                });
+
+            expect(response.status).toBe(404);
+            expect(response.body.error).toContain('not found');
+        });
+
+        test('returns 400 for invalid test case', async () => {
+            const invalidTestCase = {
+                input: "not an object",
+                output: { result: "test" }
+            };
+
+            const response = await request(app)
+                .put(`/llmfunction/update-test/${testIdentifier}/0`)
+                .send(invalidTestCase);
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('must have a valid input object');
+        });
+
+        test('returns 400 for invalid index', async () => {
+            const validTestCase = {
+                input: { test: 1 },
+                output: { result: "test" }
+            };
+
+            const response = await request(app)
+                .put(`/llmfunction/update-test/${testIdentifier}/999`)
+                .send(validTestCase);
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('Invalid test case index');
+        });
+
+        test('returns 400 for negative index', async () => {
+            const validTestCase = {
+                input: { test: 1 },
+                output: { result: "test" }
+            };
+
+            const response = await request(app)
+                .put(`/llmfunction/update-test/${testIdentifier}/-1`)
+                .send(validTestCase);
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('Invalid test case index');
+        });
+
+        afterEach(async () => {
+            // Clean up by removing the test function
+            await request(app)
+                .delete(`/llmfunction/remove/${testIdentifier}`);
+        });
+    });
 }); 

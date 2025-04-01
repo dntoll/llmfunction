@@ -38,7 +38,12 @@ class LLMFunction {
     }
 
     static fromJSON(data) {
-        return new LLMFunction(data.prompt, data.exampleOutput, data.examples);
+        const llmFunction = new LLMFunction(data.prompt, data.exampleOutput, data.examples);
+        // Behåll det befintliga ID:t om det finns
+        if (data.identifier) {
+            llmFunction.identifier = data.identifier;
+        }
+        return llmFunction;
     }
 
    
