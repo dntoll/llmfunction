@@ -51,17 +51,17 @@ class LLMFunction {
     #generateIdentifier() {
         const data = JSON.stringify({
             prompt: this.prompt,
-
             exampleOutput: this.exampleOutput,
-            examples: this.examples
+            examples: this.examples,
+            identifier: this.identifier
         });
         return crypto.createHash('sha256').update(data).digest('hex');
     }
 
     toJSON() {
         return {
+            identifier: this.identifier,
             prompt: this.prompt,
-
             exampleOutput: this.exampleOutput,
             examples: this.examples
         };

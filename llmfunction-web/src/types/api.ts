@@ -35,8 +35,10 @@ export interface TestFunctionResponse {
 }
 
 export interface ImproveFunctionResponse {
-  improved_prompt: string;
-  improved_examples: Example[];
+  message: string;
+  newPrompt: string;
+  identifier: string;
+  data: LLMFunction;
 }
 
 export interface TestResult {

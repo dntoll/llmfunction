@@ -39,7 +39,8 @@ export function FunctionPage() {
 
   const improveMutation = useMutation({
     mutationFn: () => improveFunction(id!),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['functions'] });
       queryClient.invalidateQueries({ queryKey: ['function', id] });
     },
   });
@@ -394,8 +395,25 @@ export function FunctionPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Resultat</h2>
           <div className="bg-gray-50 p-4 rounded-md">
             <pre className="whitespace-pre-wrap text-sm text-gray-700">
-              {renderResult(runMutation.data || testMutation.data || improveMutation.data || addTestMutation.data)}
+              {renderResult(runMutation.data || testMutation.data || addTestMutation.data)}
             </pre>
+            {improveMutation.data && (
+              <div className="mt-4">
+                <p className="text-green-600 font-medium">{improveMutation.data.message}</p>
+                <p className="mt-2 text-gray-700">Ny prompt:</p>
+                <pre className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">
+                  {improveMutation.data.newPrompt}
+                </pre>
+                <div className="mt-4">
+                  <a
+                    href={`/function/${improveMutation.data.identifier}`}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  >
+                    Gå till den nya funktionen
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

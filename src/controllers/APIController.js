@@ -109,7 +109,8 @@ class APIController {
         return {
             message: 'Prompt improved',
             newPrompt: newLLMFunction.prompt,
-            identifier: newLLMFunction.identifier
+            identifier: newLLMFunction.identifier,
+            data: newLLMFunction.toJSON()
         };
     }
 

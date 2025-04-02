@@ -61,6 +61,7 @@ class StorageService {
                         return {
                             identifier,
                             prompt: data.prompt,
+                            examples: data.examples,
                             lastModified: new Date().toISOString()
                         };
                     })
