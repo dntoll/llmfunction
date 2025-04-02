@@ -78,20 +78,42 @@ class LLMFunction {
         //ask mockache to improve prompt
 
         const prompt_engineer_prompt = `
-        You are a prompt engineer.
-        You are given an old_prompt and a list results from testing the prompt in a json format.
-        You are to improve the prompt to be more accurate so for each of the results.
-        Analyse the test results. With the new prompt try to get the actualOutput to be more like the expectedOutput. 
-        Assume the test expectedOutput is correct and takes precident over the old_prompt.
-        Return the new prompt in a json format as in the exampleOutput.
-        `
+       You are a prompt engineer tasked with refining natural language prompts based on test results.
 
+You will be given:
+- An old prompt (old_prompt) used to generate outputs.
+- A list of test results in JSON format. Each result includes:
+  - input: the input used during the test
+  - expectedOutput: the correct/intended output
+  - actualOutput: the output that the old prompt produced
+  - success: whether the actual matched the expected
+
+Your job is to revise the old_prompt to make it more accurate, in order to guide the system to produce outputs closer to the expectedOutput in future test cases.
+
+Instructions:
+- Carefully analyze where actualOutput differs from expectedOutput.
+- Your highest priority is to ensure that the behavior described by the new prompt leads to outputs that match the expectedOutput values. You are allowed and encouraged to discard or override the original prompt content completely if it does not align with the expected behavior. Do not preserve any part of the old prompt that would prevent correct results.
+- Rewrite the old_prompt completely if necessary to ensure that the generated outputs match the expectedOutput in the test cases. Override the logic from the old_prompt if it conflicts with what is expected in the test cases.
+- Make the revised prompt as clear and specific as possible.
+- Do NOT focus on matching the actualOutput unless it already aligns with expectedOutput.
+- Do NOT reference specific test cases or values — generalize the new prompt.
+        
+
+        Step 1: Carefully analyze the test results.
+        - For each test, comment whether it passed or failed.
+        - If it failed, explain specifically what behavior is missing or incorrect in the current prompt.
+        - Based on your analysis, determine what changes are needed in the prompt wording.
+        Step 2: Based on your analysis, rewrite the old_prompt entirely if needed.
+Make sure the new prompt reflects all necessary behavior to satisfy the expected output of all test cases.
+
+`
         const input = {
             old_prompt: this.prompt,
             test_results: results
         }
 
         const exampleOutput = {
+            "test_results_analysis": [ "... your analysis per test case ..." ],
             prompt: "The new prompt should be here",
         }
         const improvedPrompt = await mockache.gpt4SingleMessage(prompt_engineer_prompt, input, exampleOutput);
@@ -100,7 +122,7 @@ class LLMFunction {
         const newLLMFunction = new LLMFunction(improvedPrompt.prompt, this.exampleOutput, this.examples);   
         //this.prompt = improvedPrompt.prompt;
 
-        //console.log("Improved prompt: " + improvedPrompt.prompt);
+        
         return newLLMFunction;
     }
 

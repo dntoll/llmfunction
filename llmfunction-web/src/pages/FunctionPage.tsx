@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction } from '../services/api';
+import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt } from '../services/api';
 import type { RunFunctionRequest, TestCase } from '../types/api';
 import { useState } from 'react';
 
@@ -15,6 +15,8 @@ export function FunctionPage() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editTestInput, setEditTestInput] = useState('');
   const [editTestOutput, setEditTestOutput] = useState('');
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [editPrompt, setEditPrompt] = useState('');
 
   const { data: func, isLoading } = useQuery({
     queryKey: ['function', id],
@@ -39,7 +41,7 @@ export function FunctionPage() {
 
   const improveMutation = useMutation({
     mutationFn: () => improveFunction(id!),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['functions'] });
       queryClient.invalidateQueries({ queryKey: ['function', id] });
     },
@@ -76,6 +78,19 @@ export function FunctionPage() {
     },
     onError: (error) => {
       console.error('Frontend: Error during update:', error);
+    }
+  });
+
+  const updatePromptMutation = useMutation({
+    mutationFn: (prompt: string) => updateFunctionPrompt(id!, prompt),
+    onSuccess: async (data) => {
+      console.log('Frontend: Prompt update successful:', data);
+      await queryClient.invalidateQueries({ queryKey: ['function', id] });
+      setIsEditingPrompt(false);
+      setEditPrompt('');
+    },
+    onError: (error) => {
+      console.error('Frontend: Error updating prompt:', error);
     }
   });
 
@@ -192,6 +207,21 @@ export function FunctionPage() {
     setJsonError(null);
   };
 
+  const handleEditPrompt = () => {
+    setEditPrompt(func.prompt);
+    setIsEditingPrompt(true);
+  };
+
+  const handleUpdatePrompt = () => {
+    if (!editPrompt.trim()) return;
+    updatePromptMutation.mutate(editPrompt);
+  };
+
+  const handleCancelPromptEdit = () => {
+    setIsEditingPrompt(false);
+    setEditPrompt('');
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="flex justify-between items-start mb-8">
@@ -216,8 +246,44 @@ export function FunctionPage() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Prompt</h2>
-        <p className="text-gray-700 whitespace-pre-wrap">{func.prompt}</p>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Prompt</h2>
+          {!isEditingPrompt && (
+            <button
+              onClick={handleEditPrompt}
+              className="px-3 py-1 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        {isEditingPrompt ? (
+          <div className="space-y-4">
+            <textarea
+              value={editPrompt}
+              onChange={(e) => setEditPrompt(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              rows={4}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleUpdatePrompt}
+                disabled={updatePromptMutation.isPending}
+                className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {updatePromptMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={handleCancelPromptEdit}
+                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-700 whitespace-pre-wrap">{func.prompt}</p>
+        )}
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">

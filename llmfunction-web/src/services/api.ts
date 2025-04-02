@@ -144,12 +144,44 @@ export async function removeTestFromFunction(id: string, index: number): Promise
   }
 }
 
-export async function updateTestInFunction(id: string, index: number, testCase: TestCase): Promise<LLMFunction> {
+export const updateTestInFunction = async (id: string, index: number, testCase: TestCase): Promise<LLMFunction> => {
   try {
-    const response = await api.put<LLMFunction>(`/llmfunction/update-test/${id}/${index}`, testCase);
-    return response.data;
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/llmfunction/update-test/${id}/${index}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(testCase),
+    });
+
+    if (!response.ok) {
+      throw await handleError(response);
+    }
+
+    return response.json();
   } catch (error) {
     handleError(error);
     throw error;
   }
-} 
+};
+
+export const updateFunctionPrompt = async (id: string, prompt: string): Promise<LLMFunction> => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/llmfunction/update-prompt/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      throw await handleError(response);
+    }
+
+    return response.json();
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}; 

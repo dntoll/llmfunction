@@ -146,6 +146,21 @@ function setupRoutes(app, controller) {
             }
         }
     });
+
+    app.put('/llmfunction/update-prompt/:identifier', async (req, res) => {
+        try {
+            const result = await controller.updateFunctionPrompt(req.params.identifier, req.body.prompt);
+            res.json(result);
+        } catch (error) {
+            if (error instanceof FunctionNotFoundError) {
+                res.status(404).json({ error: error.message });
+            } else if (error instanceof FunctionValidationError) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    });
 }
 
 module.exports = { setupRoutes }; 

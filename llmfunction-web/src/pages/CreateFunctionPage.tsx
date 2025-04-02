@@ -1,14 +1,14 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createFunction } from '../services/api';
 import { CreateFunctionForm } from '../components/CreateFunctionForm';
-import type { CreateFunctionRequest } from '../types/api';
+import type { CreateFunctionRequest, LLMFunction } from '../types/api';
 
 export const CreateFunctionPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { mutate, isLoading, error } = useMutation({
+  const { mutate, isLoading, error }: UseMutationResult<LLMFunction, Error, CreateFunctionRequest, unknown> = useMutation({
     mutationFn: createFunction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['functions'] });
