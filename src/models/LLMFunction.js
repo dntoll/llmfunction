@@ -79,8 +79,11 @@ class LLMFunction {
 
         const prompt_engineer_prompt = `
         You are a prompt engineer.
-        You are given a prompt and a list results from testing the prompt.
-        You are to improve the prompt to be more accurate so for each of the results the output would be more like the expected output.
+        You are given an old_prompt and a list results from testing the prompt in a json format.
+        You are to improve the prompt to be more accurate so for each of the results.
+        Analyse the test results. With the new prompt try to get the actualOutput to be more like the expectedOutput. 
+        Assume the test expectedOutput is correct and takes precident over the old_prompt.
+        Return the new prompt in a json format as in the exampleOutput.
         `
 
         const input = {

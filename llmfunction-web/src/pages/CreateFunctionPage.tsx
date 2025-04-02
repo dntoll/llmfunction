@@ -24,9 +24,9 @@ export const CreateFunctionPage = () => {
     <div>
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Skapa ny funktion</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Create new function</h1>
           <p className="mt-2 text-sm text-gray-700">
-            Skapa en ny LLM-funktion genom att ange en prompt och exempel.
+            Create a new LLM function by providing a prompt and examples.
           </p>
         </div>
       </div>
@@ -34,9 +34,9 @@ export const CreateFunctionPage = () => {
       <div className="mt-8">
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="text-red-700 font-medium">Fel vid skapande av funktion</div>
+            <div className="text-red-700 font-medium">Error creating function</div>
             <div className="text-red-600 mt-2">
-              {error instanceof Error ? error.message : 'Ett oväntat fel uppstod'}
+              {error instanceof Error ? error.message : 'An unexpected error occurred'}
             </div>
           </div>
         )}

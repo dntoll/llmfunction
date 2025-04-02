@@ -19,7 +19,7 @@ export function FunctionCard({ func }: FunctionCardProps) {
           {JSON.stringify(func.exampleOutput)}
         </p>
         <div className="flex items-center text-sm text-gray-500">
-          <span>{func.examples?.length || 0} exempel</span>
+          <span>{func.examples?.length || 0} examples</span>
         </div>
       </div>
     </Link>

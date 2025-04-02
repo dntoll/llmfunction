@@ -9,9 +9,9 @@ const exampleSchema = z.object({
 });
 
 const createFunctionSchema = z.object({
-  prompt: z.string().min(1, 'Prompt är obligatorisk'),
+  prompt: z.string().min(1, 'Prompt is required'),
   exampleOutput: z.record(z.any()),
-  examples: z.array(exampleSchema).min(1, 'Minst ett exempel krävs'),
+  examples: z.array(exampleSchema).min(1, 'At least one example is required'),
 });
 
 type CreateFunctionFormData = z.infer<typeof createFunctionSchema>;
@@ -107,14 +107,14 @@ export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormPr
       <div>
         <div className="flex justify-between items-center">
           <label className="block text-sm font-medium text-gray-700">
-            Exempel
+            Examples
           </label>
           <button
             type="button"
             onClick={addExample}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Lägg till exempel
+            Add example
           </button>
         </div>
 
@@ -122,14 +122,14 @@ export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormPr
           {examples.map((_, index) => (
             <div key={index} className="border rounded-md p-4">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="text-sm font-medium text-gray-700">Exempel {index + 1}</h4>
+                <h4 className="text-sm font-medium text-gray-700">Example {index + 1}</h4>
                 {examples.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeExample(index)}
                     className="text-red-600 hover:text-red-800"
                   >
-                    Ta bort
+                    Remove
                   </button>
                 )}
               </div>

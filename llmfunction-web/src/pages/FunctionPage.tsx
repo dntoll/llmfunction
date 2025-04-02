@@ -63,11 +63,11 @@ export function FunctionPage() {
 
   const updateTestMutation = useMutation({
     mutationFn: ({ index, testCase }: { index: number; testCase: TestCase }) => {
-      console.log('Frontend: Skickar uppdatering till servern:', { index, testCase });
+      console.log('Frontend: Sending update to server:', { index, testCase });
       return updateTestInFunction(id!, index, testCase);
     },
     onSuccess: async (data) => {
-      console.log('Frontend: Uppdatering lyckades, data från servern:', data);
+      console.log('Frontend: Update successful, data from server:', data);
       await queryClient.invalidateQueries({ queryKey: ['function', id] });
       await queryClient.refetchQueries({ queryKey: ['function', id] });
       setEditingIndex(null);
@@ -75,7 +75,7 @@ export function FunctionPage() {
       setEditTestOutput('');
     },
     onError: (error) => {
-      console.error('Frontend: Fel vid uppdatering:', error);
+      console.error('Frontend: Error during update:', error);
     }
   });
 
@@ -90,8 +90,8 @@ export function FunctionPage() {
   if (!func) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Ett fel uppstod</h2>
-        <p className="text-gray-600">Kunde inte ladda funktionen. Försök igen senare.</p>
+        <h2 className="text-2xl font-bold text-red-600 mb-4">An error occurred</h2>
+        <p className="text-gray-600">Could not load the function. Please try again later.</p>
       </div>
     );
   }
@@ -126,10 +126,10 @@ export function FunctionPage() {
       const outputObj = JSON.parse(newTestOutput) as Record<string, unknown>;
       
       if (typeof inputObj !== 'object' || inputObj === null) {
-        throw new Error('Input måste vara ett JSON-objekt');
+        throw new Error('Input must be a JSON object');
       }
       if (typeof outputObj !== 'object' || outputObj === null) {
-        throw new Error('Output måste vara ett JSON-objekt');
+        throw new Error('Output must be a JSON object');
       }
 
       addTestMutation.mutate({ input: inputObj, output: outputObj });
@@ -154,10 +154,10 @@ export function FunctionPage() {
       const outputObj = JSON.parse(editTestOutput) as Record<string, unknown>;
       
       if (typeof inputObj !== 'object' || inputObj === null) {
-        throw new Error('Input måste vara ett JSON-objekt');
+        throw new Error('Input must be a JSON object');
       }
       if (typeof outputObj !== 'object' || outputObj === null) {
-        throw new Error('Output måste vara ett JSON-objekt');
+        throw new Error('Output must be a JSON object');
       }
 
       const testCase = { input: inputObj, output: outputObj };
@@ -204,13 +204,13 @@ export function FunctionPage() {
             onClick={() => navigate('/')}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            Tillbaka
+            Back
           </button>
           <button
             onClick={() => removeMutation.mutate(func.identifier)}
             className="px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50"
           >
-            Ta bort
+            Delete
           </button>
         </div>
       </div>
@@ -221,7 +221,7 @@ export function FunctionPage() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Exempel</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Examples</h2>
         <div className="space-y-4">
           {func.examples.map((example, index) => (
             <div key={index} className="border rounded-md p-4">
@@ -268,13 +268,13 @@ export function FunctionPage() {
                       disabled={updateTestMutation.isPending}
                       className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {updateTestMutation.isPending ? 'Sparar...' : 'Spara'}
+                      {updateTestMutation.isPending ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={handleCancelEdit}
                       className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                     >
-                      Avbryt
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -297,13 +297,13 @@ export function FunctionPage() {
                       onClick={() => handleEditTest(index, example)}
                       className="px-3 py-1 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50"
                     >
-                      Redigera
+                      Edit
                     </button>
                     <button
                       onClick={() => removeTestMutation.mutate(index)}
                       className="px-3 py-1 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50"
                     >
-                      Ta bort
+                      Delete
                     </button>
                   </div>
                 </>
@@ -314,7 +314,7 @@ export function FunctionPage() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Lägg till testfall</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Add Test Case</h2>
         <div className="space-y-4">
           <div>
             <label htmlFor="newTestInput" className="block text-sm font-medium text-gray-700">
@@ -360,13 +360,13 @@ export function FunctionPage() {
             disabled={addTestMutation.isPending || !newTestInput.trim() || !newTestOutput.trim()}
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
           >
-            {addTestMutation.isPending ? 'Lägger till...' : 'Lägg till testfall'}
+            {addTestMutation.isPending ? 'Adding...' : 'Add Test Case'}
           </button>
         </div>
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Kör funktion</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Run Function</h2>
         <div className="space-y-4">
           <div>
             <label htmlFor="input" className="block text-sm font-medium text-gray-700">
@@ -385,14 +385,14 @@ export function FunctionPage() {
             disabled={runMutation.isPending || !input.trim()}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {runMutation.isPending ? 'Kör...' : 'Kör funktion'}
+            {runMutation.isPending ? 'Running...' : 'Run Function'}
           </button>
         </div>
       </div>
 
       {(runMutation.data || testMutation.data || improveMutation.data || addTestMutation.data) && (
         <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Resultat</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Results</h2>
           <div className="bg-gray-50 p-4 rounded-md">
             <pre className="whitespace-pre-wrap text-sm text-gray-700">
               {renderResult(runMutation.data || testMutation.data || addTestMutation.data)}
@@ -400,7 +400,7 @@ export function FunctionPage() {
             {improveMutation.data && (
               <div className="mt-4">
                 <p className="text-green-600 font-medium">{improveMutation.data.message}</p>
-                <p className="mt-2 text-gray-700">Ny prompt:</p>
+                <p className="mt-2 text-gray-700">New prompt:</p>
                 <pre className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">
                   {improveMutation.data.newPrompt}
                 </pre>
@@ -409,7 +409,7 @@ export function FunctionPage() {
                     href={`/function/${improveMutation.data.identifier}`}
                     className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                   >
-                    Gå till den nya funktionen
+                    Go to new function
                   </a>
                 </div>
               </div>
@@ -424,14 +424,14 @@ export function FunctionPage() {
           disabled={testMutation.isPending}
           className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
         >
-          {testMutation.isPending ? 'Testar...' : 'Testa funktion'}
+          {testMutation.isPending ? 'Testing...' : 'Test Function'}
         </button>
         <button
           onClick={() => improveMutation.mutate()}
           disabled={improveMutation.isPending}
           className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
         >
-          {improveMutation.isPending ? 'Förbättrar...' : 'Förbättra funktion'}
+          {improveMutation.isPending ? 'Improving...' : 'Improve Function'}
         </button>
       </div>
     </div>
