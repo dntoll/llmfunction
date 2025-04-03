@@ -1,34 +1,30 @@
 # LLM Function API
 
+> **Language Note**: This documentation is maintained in English only. All API responses and error messages are in English.
+
 A RESTful API for managing LLM functions with persistent storage.
 
 ## Installation
 
-Dependencie
+Dependencies:
 ```bash
 sudo apt install npm 
 sudo apt install curl
 ```
-
 
 1. Clone the repository
 2. Install dependencies:
 ```bash
 npm install
 ```
-3. setup .env
+3. Setup .env:
 ```bash
 touch .env
-
 
 CACHE_SERVER=<your_cache_server_url>
 OPENAI_API_KEY_2=<your_openai_api_key>
 OPENAI_API_ORG=<your_openai_org_id>
-
-
-
 ```
-
 
 ## Usage
 
@@ -134,6 +130,6 @@ This will run all examples defined for the function and return a test report wit
   - Actual output
   - Whether the test passed or failed
 
-## Lagring
+## Storage
 
-Funktioner lagras individuellt i filsystemet under `data/functions/` med en index-fil i `data/index.json`. Varje funktion sparas i en separat JSON-fil med sin identifier som filnamn. 
+Functions are stored individually in the filesystem under `data/functions/` with an index file in `data/index.json`. Each function is saved in a separate JSON file with its identifier as the filename. 

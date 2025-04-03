@@ -466,6 +466,129 @@ describe('API Tests', () => {
                 .delete(`/llmfunction/remove/${testIdentifier}`);
         });
     });
+
+    describe('Remove test cases', () => {
+        let testIdentifier;
+
+        beforeEach(async () => {
+            // Skapa en funktion att testa
+            const response = await request(app)
+                .post('/llmfunction/create')
+                .send({
+                    prompt: "Test function for removing tests",
+                    exampleOutput: { result: "test" },
+                    examples: [
+                        { input: { test: 1 }, output: { result: "test1" } },
+                        { input: { test: 2 }, output: { result: "test2" } }
+                    ]
+                });
+            expect(response.status).toBe(201);
+            testIdentifier = response.body.identifier;
+        });
+
+        test('removes a test case successfully', async () => {
+            const response = await request(app)
+                .delete(`/llmfunction/remove-test/${testIdentifier}/0`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Test case removed successfully');
+            expect(response.body.data.examples).toHaveLength(1);
+            expect(response.body.data.examples[0]).toEqual({
+                input: { test: 2 },
+                output: { result: "test2" }
+            });
+        });
+
+        test('returns 404 when removing test from non-existent function', async () => {
+            const response = await request(app)
+                .delete('/llmfunction/remove-test/non-existent-id/0');
+
+            expect(response.status).toBe(404);
+            expect(response.body.error).toContain('not found');
+        });
+
+        test('returns 400 for invalid index', async () => {
+            const response = await request(app)
+                .delete(`/llmfunction/remove-test/${testIdentifier}/999`);
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('Invalid test case index');
+        });
+
+        test('returns 400 for negative index', async () => {
+            const response = await request(app)
+                .delete(`/llmfunction/remove-test/${testIdentifier}/-1`);
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('Invalid test case index');
+        });
+
+        afterEach(async () => {
+            await request(app)
+                .delete(`/llmfunction/remove/${testIdentifier}`);
+        });
+    });
+
+    describe('Update prompt', () => {
+        let testIdentifier;
+
+        beforeEach(async () => {
+            const response = await request(app)
+                .post('/llmfunction/create')
+                .send({
+                    prompt: "Original test function",
+                    exampleOutput: { result: "test" },
+                    examples: [
+                        { input: { test: 1 }, output: { result: "test1" } }
+                    ]
+                });
+            expect(response.status).toBe(201);
+            testIdentifier = response.body.identifier;
+        });
+
+        test('updates prompt successfully', async () => {
+            const newPrompt = "Updated test function";
+            const response = await request(app)
+                .put(`/llmfunction/update-prompt/${testIdentifier}`)
+                .send({ prompt: newPrompt });
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Prompt updated successfully');
+            expect(response.body.data.prompt).toBe(newPrompt);
+        });
+
+        test('returns 404 when updating prompt of non-existent function', async () => {
+            const response = await request(app)
+                .put('/llmfunction/update-prompt/non-existent-id')
+                .send({ prompt: "New prompt" });
+
+            expect(response.status).toBe(404);
+            expect(response.body.error).toContain('not found');
+        });
+
+        test('returns 400 when prompt is missing', async () => {
+            const response = await request(app)
+                .put(`/llmfunction/update-prompt/${testIdentifier}`)
+                .send({});
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('Prompt must be a non-empty string');
+        });
+
+        test('returns 400 when prompt is not a string', async () => {
+            const response = await request(app)
+                .put(`/llmfunction/update-prompt/${testIdentifier}`)
+                .send({ prompt: 123 });
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain('Prompt must be a non-empty string');
+        });
+
+        afterEach(async () => {
+            await request(app)
+                .delete(`/llmfunction/remove/${testIdentifier}`);
+        });
+    });
 });
 
 describe('Test Results', () => {
