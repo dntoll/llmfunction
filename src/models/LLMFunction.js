@@ -1,5 +1,6 @@
 const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
-
+const ContainerClient = require('./ContainerClient');
+const CodeRunner = require('./CodeRunner');
 const crypto = require('crypto');
 
 class LLMFunction {
@@ -75,6 +76,28 @@ class LLMFunction {
     async run(mockache, inputJson) {
         const ret = await mockache.gpt4SingleMessage(this.prompt, inputJson, this.exampleOutput);
         return ret;
+    }
+
+    async runWithCode(mockache, inputJson) {
+        try {
+            if (!mockache) {
+                throw new FunctionExecutionError('Mockache is not initialized');
+            }
+
+            const containerClient = new ContainerClient();
+            let containerInfo = await containerClient.getContainer(this.identifier);
+            
+            if (!containerInfo) {
+                console.log('Container not found, creating new container');
+                const codeRunner = new CodeRunner();
+                const code = await codeRunner.generateCode(this.prompt, this.exampleOutput, mockache);
+                containerInfo = await containerClient.createContainer(code, this.identifier);
+            }
+            
+            return await containerClient.runContainer(containerInfo, inputJson);
+        } catch (error) {
+            throw new FunctionExecutionError(`Failed to run function with code: ${error.message}`);
+        }
     }
 
     async improvePrompt(mockache) {

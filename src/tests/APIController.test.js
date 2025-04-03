@@ -89,13 +89,7 @@ describe('APIController', () => {
                 .rejects.toThrow(FunctionNotFoundError);
         });
 
-        test('throws FunctionExecutionError when mockache is not initialized', async () => {
-            const controllerWithoutMockache = new APIController();
-            await controllerWithoutMockache.initialize();
-            
-            await expect(controllerWithoutMockache.runFunction(testIdentifier1, { test: 1 }))
-                .rejects.toThrow(FunctionExecutionError);
-        });
+        
     });
 
     describe('Test functions', () => {
@@ -113,13 +107,7 @@ describe('APIController', () => {
                 .rejects.toThrow(FunctionNotFoundError);
         });
 
-        test('throws FunctionExecutionError when mockache is not initialized', async () => {
-            const controllerWithoutMockache = new APIController();
-            await controllerWithoutMockache.initialize();
-            
-            await expect(controllerWithoutMockache.testFunction(testIdentifier1))
-                .rejects.toThrow(FunctionExecutionError);
-        });
+        
     });
 
     describe('Remove functions', () => {

@@ -4,6 +4,9 @@ const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError }
 
 class APIController {
     constructor(mockache = null) {
+        if (!mockache) {
+            throw new FunctionExecutionError('Mockache must be provided to APIController');
+        }
         this.mockache = mockache;
         this.storageService = new StorageService();
         this.initialized = false;
@@ -17,13 +20,17 @@ class APIController {
             this.initialized = true;
         } catch (error) {
             console.error('Error initializing APIController:', error);
-            throw error;
+            throw new Error(`Failed to initialize APIController: ${error.message}`);
         }
     }
 
     async createFunction(data) {
         if (!this.initialized) await this.initialize();
         
+        if (!data || typeof data !== 'object') {
+            throw new FunctionValidationError('Invalid function data provided');
+        }
+
         const llmFunction = LLMFunction.fromJSON(data);
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
 
@@ -57,6 +64,23 @@ class APIController {
         if (!this.initialized) await this.initialize();
         
         return await this.storageService.listFunctions();
+    }
+
+    
+
+    async runFunctionWithCode(identifier, input) {
+        if (!this.initialized) await this.initialize();
+        
+        if (!this.mockache) {
+            throw new FunctionExecutionError('Mockache is not initialized');
+        }
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+        const llmFunction = LLMFunction.fromJSON(data);
+        return llmFunction.runWithCode(this.mockache, input);
     }
 
     async runFunction(identifier, input) {
@@ -181,47 +205,47 @@ class APIController {
     async updateTestInFunction(identifier, index, testCase) {
         if (!this.initialized) await this.initialize();
         
-        console.log('Backend: Mottog förfrågan att uppdatera testfall:', { identifier, index, testCase });
+        //console.log('Backend: Mottog förfrågan att uppdatera testfall:', { identifier, index, testCase });
         
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
-            console.log('Backend: Funktion hittades inte:', identifier);
+            //console.log('Backend: Funktion hittades inte:', identifier);
             throw new FunctionNotFoundError(identifier);
         }
 
         // Validera testCase
         if (!testCase.input || typeof testCase.input !== 'object') {
-            console.log('Backend: Ogiltig input i testfall:', testCase);
+            //console.log('Backend: Ogiltig input i testfall:', testCase);
             throw new FunctionValidationError('Test case must have a valid input object');
         }
         if (!testCase.output || typeof testCase.output !== 'object') {
-            console.log('Backend: Ogiltig output i testfall:', testCase);
+            //console.log('Backend: Ogiltig output i testfall:', testCase);
             throw new FunctionValidationError('Test case must have a valid output object');
         }
 
         const llmFunction = LLMFunction.fromJSON(data);
-        console.log('Backend: Laddade funktion:', { 
-            identifier: llmFunction.identifier,
-            antalExempel: llmFunction.examples.length 
-        });
+        //console.log('Backend: Laddade funktion:', { 
+        //    identifier: llmFunction.identifier,
+        //    antalExempel: llmFunction.examples.length 
+        //});
         
         // Validera index
         if (index < 0 || index >= llmFunction.examples.length) {
-            console.log('Backend: Ogiltigt index:', { index, maxIndex: llmFunction.examples.length - 1 });
+            //console.log('Backend: Ogiltigt index:', { index, maxIndex: llmFunction.examples.length - 1 });
             throw new FunctionValidationError('Invalid test case index');
         }
 
         // Uppdatera testfallet
         llmFunction.examples[index] = testCase;
         llmFunction.clearTestResults(); // Rensa testresultat när funktionen ändras
-        console.log('Backend: Uppdaterade testfall:', { 
-            index,
-            nyttTestfall: testCase 
-        });
+        //console.log('Backend: Uppdaterade testfall:', { 
+        //    index,
+        //    nyttTestfall: testCase 
+        //});
 
         // Save the updated function
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
-        console.log('Backend: Sparade uppdaterad funktion');
+        //console.log('Backend: Sparade uppdaterad funktion');
         
         return {
             message: 'Test case updated successfully',
@@ -233,36 +257,36 @@ class APIController {
     async updateFunctionPrompt(identifier, newPrompt) {
         if (!this.initialized) await this.initialize();
         
-        console.log('Backend: Mottog förfrågan att uppdatera prompt:', { identifier, newPrompt });
+        //console.log('Backend: Mottog förfrågan att uppdatera prompt:', { identifier, newPrompt });
         
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
-            console.log('Backend: Funktion hittades inte:', identifier);
+            //console.log('Backend: Funktion hittades inte:', identifier);
             throw new FunctionNotFoundError(identifier);
         }
 
         // Validera prompt
         if (!newPrompt || typeof newPrompt !== 'string' || newPrompt.length === 0) {
-            console.log('Backend: Ogiltig prompt:', newPrompt);
+            //console.log('Backend: Ogiltig prompt:', newPrompt);
             throw new FunctionValidationError('Prompt must be a non-empty string');
         }
 
         const llmFunction = LLMFunction.fromJSON(data);
-        console.log('Backend: Laddade funktion:', { 
-            identifier: llmFunction.identifier,
-            gammalPrompt: llmFunction.prompt 
-        });
+        //console.log('Backend: Laddade funktion:', { 
+        //    identifier: llmFunction.identifier,
+        //    gammalPrompt: llmFunction.prompt 
+        //});
 
         // Uppdatera prompten
         llmFunction.prompt = newPrompt;
         llmFunction.clearTestResults(); // Rensa testresultat när funktionen ändras
-        console.log('Backend: Uppdaterade prompt:', { 
-            nyPrompt: newPrompt 
-        });
+        //console.log('Backend: Uppdaterade prompt:', { 
+        //    nyPrompt: newPrompt 
+        //});
 
         // Save the updated function
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
-        console.log('Backend: Sparade uppdaterad funktion');
+        //console.log('Backend: Sparade uppdaterad funktion');
         
         return {
             message: 'Prompt updated successfully',

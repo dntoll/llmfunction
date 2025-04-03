@@ -2,32 +2,50 @@ const express = require('express');
 const router = express.Router();
 const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
 
+// Gemensam felhanteringsfunktion
+const handleError = (error, res) => {
+    //console.error('Error in route handler:', error);
+    
+    if (error instanceof FunctionNotFoundError) {
+        return res.status(404).json({ error: error.message });
+    } else if (error instanceof FunctionValidationError) {
+        return res.status(400).json({ error: error.message });
+    } else if (error instanceof FunctionExecutionError) {
+        return res.status(400).json({ error: error.message });
+    } else {
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Valideringsfunktion för request body
+const validateRequestBody = (req, res, next) => {
+    if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({ error: 'Invalid request body' });
+    }
+    next();
+};
+
 function setupRoutes(app, controller) {
     // POST endpoint for llmfunction/create
-    app.post('/llmfunction/create', async (req, res) => {
+    app.post('/llmfunction/create', validateRequestBody, async (req, res) => {
         try {
             const result = await controller.createFunction(req.body);
             res.status(201).json(result);
         } catch (error) {
-            if (error instanceof FunctionValidationError) {
-                res.status(400).json({ error: error.message });
-            } else {
-                res.status(500).json({ error: error.message });
-            }
+            handleError(error, res);
         }
     });
 
     // GET endpoint for llmfunction/get
     app.get('/llmfunction/get/:identifier', async (req, res) => {
         try {
+            if (!req.params.identifier) {
+                throw new FunctionValidationError('Identifier is required');
+            }
             const result = await controller.getFunction(req.params.identifier);
             res.json(result);
         } catch (error) {
-            if (error instanceof FunctionNotFoundError) {
-                res.status(404).json({ error: error.message });
-            } else {
-                res.status(500).json({ error: error.message });
-            }
+            handleError(error, res);
         }
     });
 
@@ -44,6 +62,19 @@ function setupRoutes(app, controller) {
             } else {
                 res.status(500).json({ error: error.message });
             }
+        }
+    });
+
+    // POST endpoint for llmfunction/runcode
+    app.post('/llmfunction/runcode/:identifier', validateRequestBody, async (req, res) => {
+        try {
+            if (!req.params.identifier) {
+                throw new FunctionValidationError('Identifier is required');
+            }
+            const result = await controller.runFunctionWithCode(req.params.identifier, req.body);
+            res.json(result);   
+        } catch (error) {
+            handleError(error, res);
         }
     });
 
