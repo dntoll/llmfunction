@@ -86,7 +86,12 @@ class APIController {
             throw new FunctionNotFoundError(identifier);
         }
         const llmFunction = LLMFunction.fromJSON(data);
-        return llmFunction.runAllExamples(this.mockache);
+        const testResults = await llmFunction.runAllExamples(this.mockache);
+        
+        // Spara den uppdaterade funktionen med testresultaten
+        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        
+        return testResults;
     }
 
     async improveFunction(identifier) {
@@ -132,6 +137,7 @@ class APIController {
 
         const llmFunction = LLMFunction.fromJSON(data);
         llmFunction.examples.push(testCase);
+        llmFunction.clearTestResults(); // Rensa testresultat när funktionen ändras
 
         // Save the updated function
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
@@ -160,6 +166,7 @@ class APIController {
 
         // Ta bort testfallet
         llmFunction.examples.splice(index, 1);
+        llmFunction.clearTestResults(); // Rensa testresultat när funktionen ändras
 
         // Save the updated function
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
@@ -206,6 +213,7 @@ class APIController {
 
         // Uppdatera testfallet
         llmFunction.examples[index] = testCase;
+        llmFunction.clearTestResults(); // Rensa testresultat när funktionen ändras
         console.log('Backend: Uppdaterade testfall:', { 
             index,
             nyttTestfall: testCase 
@@ -247,6 +255,7 @@ class APIController {
 
         // Uppdatera prompten
         llmFunction.prompt = newPrompt;
+        llmFunction.clearTestResults(); // Rensa testresultat när funktionen ändras
         console.log('Backend: Uppdaterade prompt:', { 
             nyPrompt: newPrompt 
         });

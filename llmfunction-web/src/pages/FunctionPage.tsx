@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt } from '../services/api';
-import type { RunFunctionRequest, TestCase } from '../types/api';
+import type { RunFunctionRequest, TestCase, LLMFunction, TestResult } from '../types/api';
 import { useState } from 'react';
 
 export function FunctionPage() {
@@ -37,6 +37,13 @@ export function FunctionPage() {
 
   const testMutation = useMutation({
     mutationFn: () => testFunction(id!),
+    onSuccess: async (data) => {
+      // Uppdatera cache med nya testresultat
+      queryClient.setQueryData(['function', id], (oldData: any) => ({
+        ...oldData,
+        testResults: data
+      }));
+    },
   });
 
   const improveMutation = useMutation({
@@ -222,6 +229,54 @@ export function FunctionPage() {
     setEditPrompt('');
   };
 
+  const TestResults = ({ results }: { results: TestResult[] }) => {
+    if (!results) return null;
+
+    return (
+      <div className="mt-8">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Test Results</h3>
+        <div className="space-y-4">
+          {results.map((result, index) => (
+            <div
+              key={index}
+              className={`p-4 rounded-md ${
+                result.success ? 'bg-green-50' : 'bg-red-50'
+              }`}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">
+                    Test {index + 1} - {result.success ? 'Passed' : 'Failed'}
+                  </h4>
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Input:</span>
+                      <pre className="mt-1 text-sm text-gray-900 bg-white p-2 rounded">
+                        {JSON.stringify(result.input, null, 2)}
+                      </pre>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Expected Output:</span>
+                      <pre className="mt-1 text-sm text-gray-900 bg-white p-2 rounded">
+                        {JSON.stringify(result.expectedOutput, null, 2)}
+                      </pre>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Actual Output:</span>
+                      <pre className="mt-1 text-sm text-gray-900 bg-white p-2 rounded">
+                        {JSON.stringify(result.actualOutput, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="flex justify-between items-start mb-8">
@@ -290,7 +345,16 @@ export function FunctionPage() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Examples</h2>
         <div className="space-y-4">
           {func.examples.map((example, index) => (
-            <div key={index} className="border rounded-md p-4">
+            <div 
+              key={index} 
+              className={`border rounded-md p-4 ${
+                func.testResults?.results[index]?.success 
+                  ? 'bg-green-50 border-green-200' 
+                  : func.testResults?.results[index] 
+                    ? 'bg-red-50 border-red-200' 
+                    : ''
+              }`}
+            >
               {editingIndex === index ? (
                 <div className="space-y-4">
                   <div>
@@ -358,6 +422,14 @@ export function FunctionPage() {
                       {JSON.stringify(example.output, null, 2)}
                     </pre>
                   </div>
+                  {func.testResults?.results[index] && (
+                    <div>
+                      <span className="font-medium text-gray-700">Actual Output:</span>
+                      <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
+                        {JSON.stringify(func.testResults.results[index].actualOutput, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                   <div className="mt-2 flex gap-2">
                     <button
                       onClick={() => handleEditTest(index, example)}

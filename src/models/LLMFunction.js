@@ -35,6 +35,7 @@ class LLMFunction {
         this.exampleOutput = exampleOutput;
         this.examples = examples;
         this.identifier = this.#generateIdentifier();
+        this.testResults = null; // Lagrar senaste testresultaten
     }
 
     static fromJSON(data) {
@@ -42,6 +43,10 @@ class LLMFunction {
         // Behåll det befintliga ID:t om det finns
         if (data.identifier) {
             llmFunction.identifier = data.identifier;
+        }
+        // Behåll testresultaten om de finns
+        if (data.testResults) {
+            llmFunction.testResults = data.testResults;
         }
         return llmFunction;
     }
@@ -52,8 +57,7 @@ class LLMFunction {
         const data = JSON.stringify({
             prompt: this.prompt,
             exampleOutput: this.exampleOutput,
-            examples: this.examples,
-            identifier: this.identifier
+            examples: this.examples
         });
         return crypto.createHash('sha256').update(data).digest('hex');
     }
@@ -63,7 +67,8 @@ class LLMFunction {
             identifier: this.identifier,
             prompt: this.prompt,
             exampleOutput: this.exampleOutput,
-            examples: this.examples
+            examples: this.examples,
+            testResults: this.testResults
         };
     }
 
@@ -143,13 +148,37 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
         const passedTests = results.filter(r => r.success).length;
         const failedTests = totalTests - passedTests;
 
-        return {
+        const testResults = {
             identifier: this.identifier,
             totalTests,
             passedTests,
             failedTests,
-            results
+            results,
+            lastRun: new Date().toISOString()
         };
+
+        this.testResults = testResults;
+        return testResults;
+    }
+
+    // Metod för att kontrollera om funktionen har ändrats sedan senaste testet
+    hasChangedSinceLastTest() {
+        if (!this.testResults) return true;
+        
+        const currentIdentifier = this.#generateIdentifier();
+        return currentIdentifier !== this.identifier;
+    }
+
+    // Metod för att rensa testresultat om funktionen har ändrats
+    clearTestResultsIfChanged() {
+        if (this.hasChangedSinceLastTest()) {
+            this.testResults = null;
+        }
+    }
+
+    // Metod för att rensa testresultat
+    clearTestResults() {
+        this.testResults = null;
     }
 }
 

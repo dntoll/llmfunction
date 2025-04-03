@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { CreateFunctionRequest } from '../types/api';
+import { useState } from 'react';
 
 const exampleSchema = z.object({
   input: z.record(z.any()),
@@ -22,6 +23,7 @@ interface CreateFunctionFormProps {
 }
 
 export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormProps) => {
+  const [jsonError, setJsonError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -53,19 +55,45 @@ export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormPr
   const updateExample = (index: number, field: 'input' | 'output', value: string) => {
     try {
       const parsedValue = JSON.parse(value);
+      if (typeof parsedValue !== 'object' || parsedValue === null) {
+        throw new Error(`${field} must be a JSON object`);
+      }
       const newExamples = [...examples];
       newExamples[index] = {
         ...newExamples[index],
         [field]: parsedValue,
       };
       setValue('examples', newExamples);
-    } catch {
-      // Ignorera JSON-parsningsfel
+      setJsonError(null);
+    } catch (err) {
+      const error = err as Error;
+      setJsonError(`${field} error: ${error.message}`);
     }
   };
 
+  const updateExampleOutput = (value: string) => {
+    try {
+      const parsedValue = JSON.parse(value);
+      if (typeof parsedValue !== 'object' || parsedValue === null) {
+        throw new Error('Example output must be a JSON object');
+      }
+      setValue('exampleOutput', parsedValue);
+      setJsonError(null);
+    } catch (err) {
+      const error = err as Error;
+      setJsonError(`Example output error: ${error.message}`);
+    }
+  };
+
+  const onSubmitForm = async (data: CreateFunctionFormData) => {
+    if (jsonError) {
+      return;
+    }
+    await onSubmit(data);
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       <div>
         <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">
           Prompt
@@ -85,23 +113,22 @@ export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormPr
 
       <div>
         <label htmlFor="exampleOutput" className="block text-sm font-medium text-gray-700">
-          Exempel på output
+          Example output format
         </label>
         <div className="mt-1">
           <textarea
             id="exampleOutput"
             rows={3}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-            onChange={(e) => {
-              try {
-                const parsedValue = JSON.parse(e.target.value);
-                setValue('exampleOutput', parsedValue);
-              } catch {
-                // Ignorera JSON-parsningsfel
-              }
-            }}
+            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+              jsonError ? 'border-red-500' : ''
+            }`}
+            onChange={(e) => updateExampleOutput(e.target.value)}
+            placeholder='{"result": "string"}'
           />
         </div>
+        {jsonError && (
+          <p className="mt-2 text-sm text-red-600">{jsonError}</p>
+        )}
       </div>
 
       <div>
@@ -134,15 +161,18 @@ export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormPr
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Input
                   </label>
                   <textarea
                     rows={3}
-                    className="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    className={`mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                      jsonError ? 'border-red-500' : ''
+                    }`}
                     onChange={(e) => updateExample(index, 'input', e.target.value)}
+                    placeholder='{"test": 1}'
                   />
                 </div>
 
@@ -152,8 +182,11 @@ export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormPr
                   </label>
                   <textarea
                     rows={3}
-                    className="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    className={`mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                      jsonError ? 'border-red-500' : ''
+                    }`}
                     onChange={(e) => updateExample(index, 'output', e.target.value)}
+                    placeholder='{"result": "test"}'
                   />
                 </div>
               </div>
@@ -168,7 +201,7 @@ export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormPr
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !!jsonError}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
         >
           {isLoading ? 'Creating...' : 'Create function'}

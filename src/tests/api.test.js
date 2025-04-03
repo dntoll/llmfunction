@@ -466,4 +466,136 @@ describe('API Tests', () => {
                 .delete(`/llmfunction/remove/${testIdentifier}`);
         });
     });
+});
+
+describe('Test Results', () => {
+    let testIdentifier;
+    let testController;
+    let testApp;
+
+    beforeEach(async () => {
+        // Skapa en ny app med en mock för testresultat
+        testApp = express();
+        testApp.use(express.json());
+        testController = new APIController(mockMockache);
+        await testController.initialize();
+        testApp.locals.apiController = testController;
+        setupRoutes(testApp, testController);
+
+        // Skapa en funktion att testa
+        const response = await request(testApp)
+            .post('/llmfunction/create')
+            .send({
+                prompt: "Test function for test results",
+                exampleOutput: { result: "test" },
+                examples: [
+                    { input: { test: 1 }, output: { result: "test1" } },
+                    { input: { test: 2 }, output: { result: "test2" } }
+                ]
+            });
+        expect(response.status).toBe(201);
+        testIdentifier = response.body.identifier;
+    });
+
+    test('saves test results when running tests', async () => {
+        // Kör tester
+        const testResponse = await request(testApp)
+            .post(`/llmfunction/test/${testIdentifier}`);
+
+        expect(testResponse.status).toBe(200);
+        expect(testResponse.body).toMatchObject({
+            identifier: testIdentifier,
+            totalTests: 2,
+            passedTests: expect.any(Number),
+            failedTests: expect.any(Number),
+            results: expect.any(Array),
+            lastRun: expect.any(String)
+        });
+
+        // Verifiera att resultaten sparas
+        const getResponse = await request(testApp)
+            .get(`/llmfunction/get/${testIdentifier}`);
+
+        expect(getResponse.status).toBe(200);
+        expect(getResponse.body.testResults).toBeDefined();
+        expect(getResponse.body.testResults).toMatchObject({
+            identifier: testIdentifier,
+            totalTests: 2,
+            passedTests: expect.any(Number),
+            failedTests: expect.any(Number),
+            results: expect.any(Array),
+            lastRun: expect.any(String)
+        });
+    });
+
+    test('clears test results when function is modified', async () => {
+        // Kör tester först
+        await request(testApp)
+            .post(`/llmfunction/test/${testIdentifier}`);
+
+        // Uppdatera funktionen genom att lägga till ett nytt test
+        const newTestCase = {
+            input: { test: 3 },
+            output: { result: "test3" }
+        };
+
+        const updateResponse = await request(testApp)
+            .post(`/llmfunction/add-test/${testIdentifier}`)
+            .send(newTestCase);
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.body.data.testResults).toBeNull();
+    });
+
+    test('clears test results when prompt is updated', async () => {
+        // Kör tester först
+        await request(testApp)
+            .post(`/llmfunction/test/${testIdentifier}`);
+
+        // Uppdatera prompten
+        const updateResponse = await request(testApp)
+            .put(`/llmfunction/update-prompt/${testIdentifier}`)
+            .send({ prompt: "Updated test function" });
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.body.data.testResults).toBeNull();
+    });
+
+    test('clears test results when test case is updated', async () => {
+        // Kör tester först
+        await request(testApp)
+            .post(`/llmfunction/test/${testIdentifier}`);
+
+        // Uppdatera ett testfall
+        const updatedTestCase = {
+            input: { test: 1, updated: true },
+            output: { result: "test1", updated: true }
+        };
+
+        const updateResponse = await request(testApp)
+            .put(`/llmfunction/update-test/${testIdentifier}/0`)
+            .send(updatedTestCase);
+
+        expect(updateResponse.status).toBe(200);
+        expect(updateResponse.body.data.testResults).toBeNull();
+    });
+
+    test('clears test results when test case is removed', async () => {
+        // Kör tester först
+        await request(testApp)
+            .post(`/llmfunction/test/${testIdentifier}`);
+
+        // Ta bort ett testfall
+        const removeResponse = await request(testApp)
+            .delete(`/llmfunction/remove-test/${testIdentifier}/0`);
+
+        expect(removeResponse.status).toBe(200);
+        expect(removeResponse.body.data.testResults).toBeNull();
+    });
+
+    afterEach(async () => {
+        // Städa upp genom att ta bort testfunktionen
+        await request(testApp)
+            .delete(`/llmfunction/remove/${testIdentifier}`);
+    });
 }); 

@@ -184,4 +184,12 @@ export const updateFunctionPrompt = async (id: string, prompt: string): Promise<
     handleError(error);
     throw error;
   }
+};
+
+export const getFunctions = async (): Promise<LLMFunction[]> => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/llmfunction/list`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch functions');
+  }
+  return response.json();
 }; 

@@ -8,17 +8,40 @@ export interface TestCase {
   output: Record<string, unknown>;
 }
 
+export interface TestResult {
+  input: Record<string, any>;
+  expectedOutput: Record<string, any>;
+  actualOutput: Record<string, any>;
+  success: boolean;
+}
+
+export interface TestResults {
+  identifier: string;
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  results: TestResult[];
+  lastRun: string;
+}
+
 export interface LLMFunction {
   identifier: string;
   prompt: string;
-  exampleOutput: Record<string, unknown>;
-  examples: TestCase[];
+  exampleOutput: Record<string, any>;
+  examples: Array<{
+    input: Record<string, any>;
+    output: Record<string, any>;
+  }>;
+  testResults?: TestResults;
 }
 
 export interface CreateFunctionRequest {
   prompt: string;
   exampleOutput: Record<string, any>;
-  examples: Example[];
+  examples: Array<{
+    input: Record<string, any>;
+    output: Record<string, any>;
+  }>;
 }
 
 export interface RunFunctionRequest {
@@ -39,15 +62,4 @@ export interface ImproveFunctionResponse {
   newPrompt: string;
   identifier: string;
   data: LLMFunction;
-}
-
-export interface TestResult {
-  identifier: string;
-  totalTests: number;
-  results: {
-    input: Record<string, any>;
-    expectedOutput: Record<string, any>;
-    actualOutput: Record<string, any>;
-    success: boolean;
-  }[];
 } 
