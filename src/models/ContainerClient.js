@@ -78,12 +78,12 @@ ENTRYPOINT ["node", "index.js"]
 
             build.stdout.on('data', (data) => {
                 buildOutput += data.toString();
-                console.log('Build output:', data.toString());
+                //console.log('Build output:', data.toString());
             });
 
             build.stderr.on('data', (data) => {
                 buildError += data.toString();
-                console.error('Build error:', data.toString());
+                //console.error('Build error:', data.toString());
             });
 
             build.on('close', (code) => {
