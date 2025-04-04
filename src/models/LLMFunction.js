@@ -84,17 +84,9 @@ class LLMFunction {
                 throw new FunctionExecutionError('Mockache is not initialized');
             }
 
-            const containerClient = new ContainerClient();
-            let containerInfo = await containerClient.getContainer(this.identifier);
-            
-            if (!containerInfo) {
-                console.log('Container not found, creating new container');
-                const codeRunner = new CodeRunner();
-                const code = await codeRunner.generateCode(this.prompt, this.exampleOutput, mockache);
-                containerInfo = await containerClient.createContainer(code, this.identifier);
-            }
-            
-            return await containerClient.runContainer(containerInfo, inputJson);
+            const codeRunner = new CodeRunner();
+            const code = await codeRunner.generateCode(this.prompt, this.exampleOutput, mockache);
+            return await codeRunner.execute(code, this.identifier, inputJson);
         } catch (error) {
             throw new FunctionExecutionError(`Failed to run function with code: ${error.message}`);
         }

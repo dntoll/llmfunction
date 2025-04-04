@@ -138,10 +138,12 @@ ENTRYPOINT ["node", "index.js"]
                         throw new Error('No result found in output');
                     }
                     const jsonStr = resultLine.split('Stringified result:')[1].trim();
+                    console.log('JSON string:', jsonStr);
                     const result = JSON.parse(jsonStr);
                     resolve(result);
                 } catch (e) {
-                    reject(new Error(`Failed to parse container output: ${output}`));
+                    
+                    reject(new Error(`Failed to parse container output: ${e}`));
                 }
             });
         });

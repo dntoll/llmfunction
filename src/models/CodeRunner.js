@@ -30,21 +30,13 @@ class CodeRunner {
         `;
 
         const exampleCode = {
-            code: `
-// Example implementation
-const result = {
-    // Your implementation here
-    value: input.value * 2
-};
-`
+            code: `const result = {
+            // Your implementation here
+            sum: 10 
+        };`
         };
 
-        //temporary code
-        const generatedCode = `const result = {
-            // Your implementation here
-             sum: 10 
-        };`
-    //await mockache.gpt4SingleMessage(codeGenerationPrompt, { prompt, exampleCode }, exampleCode);
+        const generatedCode = await mockache.gpt4SingleMessage(codeGenerationPrompt, { prompt, exampleCode }, exampleCode);
 
         console.log('Generated code:', generatedCode);
         
@@ -78,6 +70,9 @@ const result = {
     }
 
     async execute(sourceCode, functionId, inputJson) {
+
+
+        
         // Lägg till input parsing och output formatting
         const completeCode = `
 // Read input from command line arguments

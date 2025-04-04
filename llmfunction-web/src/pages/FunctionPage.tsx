@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt } from '../services/api';
+import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, updateFunctionOutputFormat } from '../services/api';
 import type { RunFunctionRequest, TestCase, LLMFunction, TestResult } from '../types/api';
 import { useState } from 'react';
 
@@ -17,6 +17,8 @@ export function FunctionPage() {
   const [editTestOutput, setEditTestOutput] = useState('');
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
+  const [isEditingOutputFormat, setIsEditingOutputFormat] = useState(false);
+  const [editOutputFormat, setEditOutputFormat] = useState('');
 
   const { data: func, isLoading } = useQuery({
     queryKey: ['function', id],
@@ -98,6 +100,19 @@ export function FunctionPage() {
     },
     onError: (error) => {
       console.error('Frontend: Error updating prompt:', error);
+    }
+  });
+
+  const updateOutputFormatMutation = useMutation({
+    mutationFn: (outputFormat: string) => updateFunctionOutputFormat(id!, outputFormat),
+    onSuccess: async (data) => {
+      console.log('Frontend: Output format update successful:', data);
+      await queryClient.invalidateQueries({ queryKey: ['function', id] });
+      setIsEditingOutputFormat(false);
+      setEditOutputFormat('');
+    },
+    onError: (error) => {
+      console.error('Frontend: Error updating output format:', error);
     }
   });
 
@@ -229,6 +244,31 @@ export function FunctionPage() {
     setEditPrompt('');
   };
 
+  const handleEditOutputFormat = () => {
+    setEditOutputFormat(JSON.stringify(func?.exampleOutput, null, 2));
+    setIsEditingOutputFormat(true);
+  };
+
+  const handleUpdateOutputFormat = () => {
+    if (!editOutputFormat.trim()) return;
+    try {
+      const parsedOutput = JSON.parse(editOutputFormat);
+      if (typeof parsedOutput !== 'object' || parsedOutput === null) {
+        throw new Error('Output format must be a JSON object');
+      }
+      updateOutputFormatMutation.mutate(editOutputFormat);
+    } catch (err) {
+      const error = err as Error;
+      setJsonError(error.message);
+    }
+  };
+
+  const handleCancelOutputFormatEdit = () => {
+    setIsEditingOutputFormat(false);
+    setEditOutputFormat('');
+    setJsonError(null);
+  };
+
   const TestResults = ({ results }: { results: TestResult[] }) => {
     if (!results) return null;
 
@@ -338,6 +378,57 @@ export function FunctionPage() {
           </div>
         ) : (
           <p className="text-gray-700 whitespace-pre-wrap">{func.prompt}</p>
+        )}
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Output Format</h2>
+          {!isEditingOutputFormat && (
+            <button
+              onClick={handleEditOutputFormat}
+              className="px-3 py-1 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        {isEditingOutputFormat ? (
+          <div className="space-y-4">
+            <textarea
+              value={editOutputFormat}
+              onChange={(e) => {
+                setEditOutputFormat(e.target.value);
+                setJsonError(null);
+              }}
+              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
+                jsonError ? 'border-red-500' : ''
+              }`}
+              rows={4}
+            />
+            {jsonError && (
+              <p className="text-sm text-red-600">{jsonError}</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleUpdateOutputFormat}
+                disabled={updateOutputFormatMutation.isPending}
+                className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {updateOutputFormatMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={handleCancelOutputFormatEdit}
+                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <pre className="text-gray-700 whitespace-pre-wrap">
+            {JSON.stringify(func.exampleOutput, null, 2)}
+          </pre>
         )}
       </div>
 

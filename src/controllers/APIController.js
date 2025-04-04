@@ -257,39 +257,48 @@ class APIController {
     async updateFunctionPrompt(identifier, newPrompt) {
         if (!this.initialized) await this.initialize();
         
-        //console.log('Backend: Mottog förfrågan att uppdatera prompt:', { identifier, newPrompt });
-        
         const data = await this.storageService.loadFunction(identifier);
         if (!data) {
-            //console.log('Backend: Funktion hittades inte:', identifier);
             throw new FunctionNotFoundError(identifier);
         }
 
-        // Validera prompt
         if (!newPrompt || typeof newPrompt !== 'string' || newPrompt.length === 0) {
-            //console.log('Backend: Ogiltig prompt:', newPrompt);
             throw new FunctionValidationError('Prompt must be a non-empty string');
         }
 
         const llmFunction = LLMFunction.fromJSON(data);
-        //console.log('Backend: Laddade funktion:', { 
-        //    identifier: llmFunction.identifier,
-        //    gammalPrompt: llmFunction.prompt 
-        //});
-
-        // Uppdatera prompten
         llmFunction.prompt = newPrompt;
-        llmFunction.clearTestResults(); // Rensa testresultat när funktionen ändras
-        //console.log('Backend: Uppdaterade prompt:', { 
-        //    nyPrompt: newPrompt 
-        //});
+        llmFunction.clearTestResults();
 
-        // Save the updated function
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
-        //console.log('Backend: Sparade uppdaterad funktion');
         
         return {
             message: 'Prompt updated successfully',
+            identifier: llmFunction.identifier,
+            data: llmFunction.toJSON()
+        };
+    }
+
+    async updateFunctionOutputFormat(identifier, newOutputFormat) {
+        if (!this.initialized) await this.initialize();
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+
+        if (!newOutputFormat || typeof newOutputFormat !== 'object' || newOutputFormat === null) {
+            throw new FunctionValidationError('Output format must be a valid JSON object');
+        }
+
+        const llmFunction = LLMFunction.fromJSON(data);
+        llmFunction.exampleOutput = newOutputFormat;
+        llmFunction.clearTestResults();
+
+        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        
+        return {
+            message: 'Output format updated successfully',
             identifier: llmFunction.identifier,
             data: llmFunction.toJSON()
         };
