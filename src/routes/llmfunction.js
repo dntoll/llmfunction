@@ -77,6 +77,7 @@ function setupRoutes(app, controller) {
                 status: 'completed'
             });   
         } catch (error) {
+            console.error('Error in runcode:', error);
             handleError(error, res);
         }
     });

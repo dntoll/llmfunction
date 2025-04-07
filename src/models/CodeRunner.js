@@ -39,10 +39,13 @@ class CodeRunner {
 
         const generatedCode = await mockache.gpt4SingleMessage(codeGenerationPrompt, { prompt, exampleCode }, exampleCode);
 
-        console.log('Generated code:', generatedCode);
+        
+        
+        // Extrahera koden från JSON-svaret
+        const code = generatedCode.code
         
         // Validera att koden innehåller en result-variabel
-        if (!generatedCode.includes('const result =') && !generatedCode.includes('let result =')) {
+        if (!code.includes('const result =') && !code.includes('let result =')) {
             throw new Error('Generated code must create a result variable');
         }
 
@@ -62,23 +65,23 @@ class CodeRunner {
         ];
 
         for (const pattern of forbiddenPatterns) {
-            if (generatedCode.includes(pattern)) {
+            if (code.includes(pattern)) {
                 throw new Error(`Generated code contains forbidden pattern: ${pattern}`);
             }
         }
 
-        return generatedCode;
+        
+
+        return code;
     }
 
     async execute(sourceCode, functionId, inputJson) {
-
-
-        
         // Lägg till input parsing och output formatting
         const completeCode = `
 // Read input from command line arguments
 console.log('Received input:', process.argv[2]);
-const input = JSON.parse(process.argv[2]);
+const rawInput = JSON.parse(process.argv[2]);
+const input = rawInput.input;  // Extrahera det faktiska input-objektet
 console.log('Parsed input:', input);
 
 // Process the input according to the prompt
@@ -88,6 +91,8 @@ ${sourceCode}
 console.log('Result:', result);
 console.log('Stringified result:', JSON.stringify(result));
 `;
+
+        console.log('Complete code:', completeCode);
 
         return await this.containerClient.execute(completeCode, functionId, inputJson);
     }

@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt } from '../services/api';
+import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, runFunctionWithCode } from '../services/api';
 import type { RunFunctionRequest, TestCase, TestResult, TestResults } from '../types/api';
 import { useState } from 'react';
 import { JsonInput } from '../components/JsonInput';
@@ -35,6 +35,10 @@ export function FunctionPage() {
 
   const runMutation = useMutation({
     mutationFn: (data: RunFunctionRequest) => runFunction(id!, data),
+  });
+
+  const runWithCodeMutation = useMutation({
+    mutationFn: (data: RunFunctionRequest) => runFunctionWithCode(id!, data),
   });
 
   const testMutation = useMutation({
@@ -373,13 +377,22 @@ export function FunctionPage() {
             onChange={(e) => setInput(e.target.value)}
             rows={4}
           />
-          <button
-            onClick={() => runMutation.mutate({ input: JSON.parse(input) })}
-            disabled={runMutation.isPending || !input.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {runMutation.isPending ? 'Running...' : 'Run Function'}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => runMutation.mutate({ input: JSON.parse(input) })}
+              disabled={runMutation.isPending || !input.trim()}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {runMutation.isPending ? 'Running...' : 'Run Function'}
+            </button>
+            <button
+              onClick={() => runWithCodeMutation.mutate({ input: JSON.parse(input) })}
+              disabled={runWithCodeMutation.isPending || !input.trim()}
+              className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
+            >
+              {runWithCodeMutation.isPending ? 'Running...' : 'Run with Code'}
+            </button>
+          </div>
         </div>
       </div>
 
