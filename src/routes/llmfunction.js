@@ -65,6 +65,19 @@ function setupRoutes(app, controller) {
         }
     });
 
+    // GET endpoint for llmfunction/code
+    app.get('/llmfunction/code/:identifier', async (req, res) => {
+        try {
+            if (!req.params.identifier) {
+                throw new FunctionValidationError('Identifier is required');
+            }
+            const result = await controller.getFunctionCode(req.params.identifier);
+            res.json(result);
+        } catch (error) {
+            handleError(error, res);
+        }
+    });
+
     // POST endpoint for llmfunction/runcode
     app.post('/llmfunction/runcode/:identifier', validateRequestBody, async (req, res) => {
         try {

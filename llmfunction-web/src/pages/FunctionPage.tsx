@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, runFunctionWithCode } from '../services/api';
+import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, runFunctionWithCode, getFunctionCode } from '../services/api';
 import type { RunFunctionRequest, TestCase, TestResult, TestResults } from '../types/api';
 import { useState } from 'react';
 import { JsonInput } from '../components/JsonInput';
@@ -23,6 +23,12 @@ export function FunctionPage() {
   const { data: func, isLoading } = useQuery({
     queryKey: ['function', id],
     queryFn: () => getFunction(id!),
+  });
+
+  const { data: generatedCode, isLoading: isCodeLoading } = useQuery({
+    queryKey: ['functionCode', id],
+    queryFn: () => getFunctionCode(id!),
+    enabled: !!id && !isLoading,
   });
 
   const removeMutation = useMutation({
@@ -341,7 +347,24 @@ export function FunctionPage() {
             </div>
           </div>
         ) : (
-          <p className="text-gray-700 whitespace-pre-wrap">{func.prompt}</p>
+          <div className="space-y-4">
+            <p className="text-gray-700 whitespace-pre-wrap">{func.prompt}</p>
+            {isCodeLoading ? (
+              <div className="mt-4">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                  <div className="h-32 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ) : generatedCode ? (
+              <div className="mt-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Genererad kod</h3>
+                <pre className="bg-gray-50 p-4 rounded-md overflow-x-auto">
+                  <code className="text-sm text-gray-700">{generatedCode}</code>
+                </pre>
+              </div>
+            ) : null}
+          </div>
         )}
       </div>
 
