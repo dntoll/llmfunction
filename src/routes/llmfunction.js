@@ -72,10 +72,10 @@ function setupRoutes(app, controller) {
                 throw new FunctionValidationError('Identifier is required');
             }
             const output = await controller.runFunctionWithCode(req.params.identifier, req.body);
-            res.json({
-                output,
-                status: 'completed'
-            });   
+
+            console.log('Output:', output.output);
+            res.json(output.output);
+            
         } catch (error) {
             console.error('Error in runcode:', error);
             handleError(error, res);

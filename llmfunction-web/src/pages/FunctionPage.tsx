@@ -396,12 +396,12 @@ export function FunctionPage() {
         </div>
       </div>
 
-      {(runMutation.data || testMutation.data || improveMutation.data || addTestMutation.data) && (
+      {(runMutation.data || runWithCodeMutation.data || testMutation.data || improveMutation.data || addTestMutation.data) && (
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Results</h2>
           <div className="bg-gray-50 p-4 rounded-md">
             <pre className="whitespace-pre-wrap text-sm text-gray-700">
-              {renderResult(runMutation.data || testMutation.data || addTestMutation.data)}
+              {renderResult(runMutation.data || runWithCodeMutation.data || testMutation.data || addTestMutation.data)}
             </pre>
             {improveMutation.data && (
               <div className="mt-4">
