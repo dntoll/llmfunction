@@ -35,10 +35,16 @@ export function FunctionPage() {
 
   const runMutation = useMutation({
     mutationFn: (data: RunFunctionRequest) => runFunction(id!, data),
+    onSuccess: () => {
+      runWithCodeMutation.reset();
+    }
   });
 
   const runWithCodeMutation = useMutation({
     mutationFn: (data: RunFunctionRequest) => runFunctionWithCode(id!, data),
+    onSuccess: () => {
+      runMutation.reset();
+    }
   });
 
   const testMutation = useMutation({
@@ -379,14 +385,28 @@ export function FunctionPage() {
           />
           <div className="flex gap-4">
             <button
-              onClick={() => runMutation.mutate({ input: JSON.parse(input) })}
+              onClick={() => {
+                try {
+                  const parsedInput = JSON.parse(input);
+                  runMutation.mutate({ input: parsedInput });
+                } catch (error) {
+                  console.error('Invalid JSON input:', error);
+                }
+              }}
               disabled={runMutation.isPending || !input.trim()}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {runMutation.isPending ? 'Running...' : 'Run Function'}
             </button>
             <button
-              onClick={() => runWithCodeMutation.mutate({ input: JSON.parse(input) })}
+              onClick={() => {
+                try {
+                  const parsedInput = JSON.parse(input);
+                  runWithCodeMutation.mutate({ input: parsedInput });
+                } catch (error) {
+                  console.error('Invalid JSON input:', error);
+                }
+              }}
               disabled={runWithCodeMutation.isPending || !input.trim()}
               className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
             >
@@ -401,7 +421,7 @@ export function FunctionPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Results</h2>
           <div className="bg-gray-50 p-4 rounded-md">
             <pre className="whitespace-pre-wrap text-sm text-gray-700">
-              {renderResult(runMutation.data || runWithCodeMutation.data || testMutation.data || addTestMutation.data)}
+              {runWithCodeMutation.data ? JSON.stringify(runWithCodeMutation.data, null, 2) : renderResult(runMutation.data || testMutation.data || addTestMutation.data)}
             </pre>
             {improveMutation.data && (
               <div className="mt-4">

@@ -74,7 +74,7 @@ function setupRoutes(app, controller) {
             const output = await controller.runFunctionWithCode(req.params.identifier, req.body);
 
             const ret = output.output ? output.output : output;
-            console.log('Output:', ret);
+            //console.log('Output:', ret);
             res.json(ret);
             
         } catch (error) {
