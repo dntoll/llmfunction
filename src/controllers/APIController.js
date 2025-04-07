@@ -279,30 +279,7 @@ class APIController {
         };
     }
 
-    async updateFunctionOutputFormat(identifier, newOutputFormat) {
-        if (!this.initialized) await this.initialize();
-        
-        const data = await this.storageService.loadFunction(identifier);
-        if (!data) {
-            throw new FunctionNotFoundError(identifier);
-        }
-
-        if (!newOutputFormat || typeof newOutputFormat !== 'object' || newOutputFormat === null) {
-            throw new FunctionValidationError('Output format must be a valid JSON object');
-        }
-
-        const llmFunction = LLMFunction.fromJSON(data);
-        llmFunction.exampleOutput = newOutputFormat;
-        llmFunction.clearTestResults();
-
-        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
-        
-        return {
-            message: 'Output format updated successfully',
-            identifier: llmFunction.identifier,
-            data: llmFunction.toJSON()
-        };
-    }
+    
 }
 
 module.exports = APIController; 

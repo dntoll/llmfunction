@@ -35,7 +35,6 @@ describe('Run functions with code', () => {
             .post('/llmfunction/create')
             .send({
                 prompt: "add numbers in input",
-                exampleOutput: { sum: 10 },
                 examples: [
                     { input: { a: 5, b:5 }, output: { sum: 10 } }
                 ]

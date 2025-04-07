@@ -44,7 +44,6 @@ describe('API Tests', () => {
                 .post('/llmfunction/create')
                 .send({
                     prompt: "Test function 1",
-                    exampleOutput: { result: "test1" },
                     examples: [
                         { input: { test: 1 }, output: { result: "test1" } }
                     ]
@@ -59,7 +58,6 @@ describe('API Tests', () => {
                 .post('/llmfunction/create')
                 .send({
                     prompt: "Test function 2",
-                    exampleOutput: { result: "test2" },
                     examples: [
                         { input: { test: 2 }, output: { result: "test2" } }
                     ]
@@ -78,7 +76,7 @@ describe('API Tests', () => {
                     // Missing exampleOutput and examples
                 });
             expect(response.status).toBe(400);
-            expect(response.body.error).toContain('ExampleOutput must be a json object');
+            expect(response.body.error).toContain('Examples must be non empty array');
         });
 
         test('retrieves the created functions', async () => {

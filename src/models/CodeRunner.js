@@ -5,7 +5,7 @@ class CodeRunner {
         this.containerClient = new ContainerClient();
     }
 
-    async generateCode(prompt, exampleOutput, mockache) {
+    async generateCode(prompt, examples, mockache) {
         if (!mockache) {
             throw new Error('Mockache is required for code generation');
         }
@@ -15,7 +15,8 @@ class CodeRunner {
         
         Prompt: ${prompt}
         
-        Example Output: ${JSON.stringify(exampleOutput)}
+        Input format: ${JSON.stringify(examples[0].input)}
+        Output format: ${JSON.stringify(examples[0].output)}
         
         The code should:
         1. Use the 'input' variable that contains the input object
@@ -32,7 +33,7 @@ class CodeRunner {
         const exampleCode = {
             code: `const result = {
             // Your implementation here
-            sum: 10 
+            sum: 10 //output formatted code 
         };`
         };
 

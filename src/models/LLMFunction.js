@@ -6,16 +6,12 @@ const crypto = require('crypto');
 class LLMFunction {
 
 
-    constructor(prompt, exampleOutput, examples) {
+    constructor(prompt, examples) {
         // Validera prompt
         if (!prompt || typeof prompt !== 'string' || prompt.length === 0) {
             throw new FunctionValidationError('Prompt must be non empty string');
         }
 
-               // Validera exampleOutput
-        if (!exampleOutput || typeof exampleOutput !== 'object') {
-            throw new FunctionValidationError('ExampleOutput must be a json object');
-        }
 
         // Validera examples
         if (!Array.isArray(examples) || examples.length === 0) {
@@ -33,15 +29,14 @@ class LLMFunction {
         });
 
         this.prompt = prompt;
-        this.exampleOutput = exampleOutput;
         this.examples = examples;
         this.identifier = this.#generateIdentifier();
         this.testResults = null; // Lagrar senaste testresultaten
     }
 
     static fromJSON(data) {
-        const llmFunction = new LLMFunction(data.prompt, data.exampleOutput, data.examples);
-        // Behåll det befintliga ID:t om det finns
+        const llmFunction = new LLMFunction(data.prompt, data.examples);
+     
         if (data.identifier) {
             llmFunction.identifier = data.identifier;
         }
@@ -57,7 +52,6 @@ class LLMFunction {
     #generateIdentifier() {
         const data = JSON.stringify({
             prompt: this.prompt,
-            exampleOutput: this.exampleOutput,
             examples: this.examples
         });
         return crypto.createHash('sha256').update(data).digest('hex');
@@ -67,14 +61,13 @@ class LLMFunction {
         return {
             identifier: this.identifier,
             prompt: this.prompt,
-            exampleOutput: this.exampleOutput,
             examples: this.examples,
             testResults: this.testResults
         };
     }
 
     async run(mockache, inputJson) {
-        const ret = await mockache.gpt4SingleMessage(this.prompt, inputJson, this.exampleOutput);
+        const ret = await mockache.gpt4SingleMessage(this.prompt, inputJson, this.examples);
         return ret;
     }
 
@@ -85,7 +78,7 @@ class LLMFunction {
             }
 
             const codeRunner = new CodeRunner();
-            const code = await codeRunner.generateCode(this.prompt, this.exampleOutput, mockache);
+            const code = await codeRunner.generateCode(this.prompt, this.examples, mockache);
             return await codeRunner.execute(code, this.identifier, inputJson);
         } catch (error) {
             throw new FunctionExecutionError(`Failed to run function with code: ${error.message}`);
@@ -139,7 +132,7 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
         const improvedPrompt = await mockache.gpt4SingleMessage(prompt_engineer_prompt, input, exampleOutput);
         //set prompt to improved prompt
         //create new object with improved prompt
-        const newLLMFunction = new LLMFunction(improvedPrompt.prompt, this.exampleOutput, this.examples);   
+        const newLLMFunction = new LLMFunction(improvedPrompt.prompt, this.examples);   
         //this.prompt = improvedPrompt.prompt;
 
         
