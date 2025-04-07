@@ -1,14 +1,14 @@
-import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createFunction } from '../services/api';
 import { CreateFunctionForm } from '../components/CreateFunctionForm';
-import type { CreateFunctionRequest, LLMFunction } from '../types/api';
+import type { CreateFunctionRequest } from '../types/api';
 
 export const CreateFunctionPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { mutate, isLoading, error }: UseMutationResult<LLMFunction, Error, CreateFunctionRequest, unknown> = useMutation({
+  const mutation = useMutation({
     mutationFn: createFunction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['functions'] });
@@ -17,7 +17,7 @@ export const CreateFunctionPage = () => {
   });
 
   const handleSubmit = async (data: CreateFunctionRequest) => {
-    mutate(data);
+    mutation.mutate(data);
   };
 
   return (
@@ -32,18 +32,18 @@ export const CreateFunctionPage = () => {
       </div>
 
       <div className="mt-8">
-        {error && (
+        {mutation.error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="text-red-700 font-medium">Error creating function</div>
             <div className="text-red-600 mt-2">
-              {error instanceof Error ? error.message : 'An unexpected error occurred'}
+              {mutation.error instanceof Error ? mutation.error.message : 'An unexpected error occurred'}
             </div>
           </div>
         )}
 
         <div className="bg-white shadow sm:rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <CreateFunctionForm onSubmit={handleSubmit} isLoading={isLoading} />
+            <CreateFunctionForm onSubmit={handleSubmit} isLoading={mutation.isPending} />
           </div>
         </div>
       </div>

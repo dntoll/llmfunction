@@ -1,212 +1,117 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useForm, useFieldArray } from 'react-hook-form';
 import type { CreateFunctionRequest } from '../types/api';
-import { useState } from 'react';
+import { JsonInput } from './JsonInput';
+import { ExampleCard } from './ExampleCard';
 
-const exampleSchema = z.object({
-  input: z.record(z.any()),
-  output: z.record(z.any()),
-});
+interface FormData {
+  prompt: string;
+  examples: Array<{
+    input: string;
+    output: string;
+  }>;
+}
 
-const createFunctionSchema = z.object({
-  prompt: z.string().min(1, 'Prompt is required'),
-  exampleOutput: z.record(z.any()),
-  examples: z.array(exampleSchema).min(1, 'At least one example is required'),
-});
-
-type CreateFunctionFormData = z.infer<typeof createFunctionSchema>;
-
-interface CreateFunctionFormProps {
-  onSubmit: (data: CreateFunctionRequest) => Promise<void>;
+interface Props {
+  onSubmit: (data: CreateFunctionRequest) => void;
   isLoading: boolean;
 }
 
-export const CreateFunctionForm = ({ onSubmit, isLoading }: CreateFunctionFormProps) => {
-  const [jsonError, setJsonError] = useState<string | null>(null);
+export function CreateFunctionForm({ onSubmit, isLoading }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
-    watch,
-    setValue,
-  } = useForm<CreateFunctionFormData>({
-    resolver: zodResolver(createFunctionSchema),
+  } = useForm<FormData>({
     defaultValues: {
       prompt: '',
-      exampleOutput: {},
-      examples: [{ input: {}, output: {} }],
+      examples: [{
+        input: JSON.stringify({ "text": "Hello world" }, null, 2),
+        output: JSON.stringify({ "result": "Greeting message received" }, null, 2)
+      }],
     },
   });
 
-  const examples = watch('examples');
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'examples',
+  });
 
-  const addExample = () => {
-    setValue('examples', [...examples, { input: {}, output: {} }]);
-  };
-
-  const removeExample = (index: number) => {
-    setValue(
-      'examples',
-      examples.filter((_, i) => i !== index)
-    );
-  };
-
-  const updateExample = (index: number, field: 'input' | 'output', value: string) => {
+  const validateJSON = (value: unknown) => {
     try {
-      const parsedValue = JSON.parse(value);
-      if (typeof parsedValue !== 'object' || parsedValue === null) {
-        throw new Error(`${field} must be a JSON object`);
+      if (typeof value === 'string') {
+        const parsed = JSON.parse(value);
+        if (typeof parsed !== 'object' || parsed === null) {
+          return 'Must be a JSON object';
+        }
+        return true;
       }
-      const newExamples = [...examples];
-      newExamples[index] = {
-        ...newExamples[index],
-        [field]: parsedValue,
-      };
-      setValue('examples', newExamples);
-      setJsonError(null);
-    } catch (err) {
-      const error = err as Error;
-      setJsonError(`${field} error: ${error.message}`);
+      return 'Must be a string';
+    } catch {
+      return 'Invalid JSON';
     }
   };
 
-  const updateExampleOutput = (value: string) => {
-    try {
-      const parsedValue = JSON.parse(value);
-      if (typeof parsedValue !== 'object' || parsedValue === null) {
-        throw new Error('Example output must be a JSON object');
-      }
-      setValue('exampleOutput', parsedValue);
-      setJsonError(null);
-    } catch (err) {
-      const error = err as Error;
-      setJsonError(`Example output error: ${error.message}`);
-    }
-  };
-
-  const onSubmitForm = async (data: CreateFunctionFormData) => {
-    if (jsonError) {
-      return;
-    }
-    await onSubmit(data);
+  const handleFormSubmit = (data: FormData) => {
+    const processedData: CreateFunctionRequest = {
+      prompt: data.prompt,
+      examples: data.examples.map(example => ({
+        input: JSON.parse(example.input),
+        output: JSON.parse(example.output)
+      }))
+    };
+    onSubmit(processedData);
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
-      <div>
-        <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">
-          Prompt
-        </label>
-        <div className="mt-1">
-          <textarea
-            id="prompt"
-            rows={3}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-            {...register('prompt')}
-          />
-        </div>
-        {errors.prompt && (
-          <p className="mt-2 text-sm text-red-600">{errors.prompt.message}</p>
-        )}
-      </div>
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      <JsonInput
+        label="Prompt"
+        name="prompt"
+        register={register}
+        error={errors.prompt}
+        rows={4}
+      />
 
       <div>
-        <label htmlFor="exampleOutput" className="block text-sm font-medium text-gray-700">
-          Example output format
-        </label>
-        <div className="mt-1">
-          <textarea
-            id="exampleOutput"
-            rows={3}
-            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-              jsonError ? 'border-red-500' : ''
-            }`}
-            onChange={(e) => updateExampleOutput(e.target.value)}
-            placeholder='{"result": "string"}'
-          />
-        </div>
-        {jsonError && (
-          <p className="mt-2 text-sm text-red-600">{jsonError}</p>
-        )}
-      </div>
-
-      <div>
-        <div className="flex justify-between items-center">
-          <label className="block text-sm font-medium text-gray-700">
-            Examples
-          </label>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Examples</h3>
           <button
             type="button"
-            onClick={addExample}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={() => append({ 
+              input: JSON.stringify({ "key": "value" }, null, 2),
+              output: JSON.stringify({ "result": "output" }, null, 2)
+            })}
+            className="px-3 py-1 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50"
           >
-            Add example
+            Add Example
           </button>
         </div>
-
-        <div className="mt-4 space-y-4">
-          {examples.map((_, index) => (
-            <div key={index} className="border rounded-md p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="text-sm font-medium text-gray-700">Example {index + 1}</h4>
-                {examples.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeExample(index)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Input
-                  </label>
-                  <textarea
-                    rows={3}
-                    className={`mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                      jsonError ? 'border-red-500' : ''
-                    }`}
-                    onChange={(e) => updateExample(index, 'input', e.target.value)}
-                    placeholder='{"test": 1}'
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Output
-                  </label>
-                  <textarea
-                    rows={3}
-                    className={`mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                      jsonError ? 'border-red-500' : ''
-                    }`}
-                    onChange={(e) => updateExample(index, 'output', e.target.value)}
-                    placeholder='{"result": "test"}'
-                  />
-                </div>
-              </div>
-            </div>
+        <div className="space-y-4">
+          {fields.map((field, index) => (
+            <ExampleCard
+              key={field.id}
+              index={index}
+              register={register}
+              errors={{
+                input: errors.examples?.[index]?.input,
+                output: errors.examples?.[index]?.output
+              }}
+              onRemove={fields.length > 1 ? () => remove(index) : undefined}
+            />
           ))}
         </div>
-        {errors.examples && (
-          <p className="mt-2 text-sm text-red-600">{errors.examples.message}</p>
-        )}
       </div>
 
-      <div className="flex justify-end">
+      <div>
         <button
           type="submit"
-          disabled={isLoading || !!jsonError}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          disabled={isLoading}
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
         >
-          {isLoading ? 'Creating...' : 'Create function'}
+          {isLoading ? 'Creating...' : 'Create Function'}
         </button>
       </div>
     </form>
   );
-}; 
+} 

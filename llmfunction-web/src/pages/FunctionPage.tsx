@@ -1,8 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, updateFunctionOutputFormat } from '../services/api';
-import type { RunFunctionRequest, TestCase, LLMFunction, TestResult } from '../types/api';
+import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt } from '../services/api';
+import type { RunFunctionRequest, TestCase, TestResult, TestResults } from '../types/api';
 import { useState } from 'react';
+import { JsonInput } from '../components/JsonInput';
+import { ExampleCard } from '../components/ExampleCard';
 
 export function FunctionPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,8 +19,6 @@ export function FunctionPage() {
   const [editTestOutput, setEditTestOutput] = useState('');
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
-  const [isEditingOutputFormat, setIsEditingOutputFormat] = useState(false);
-  const [editOutputFormat, setEditOutputFormat] = useState('');
 
   const { data: func, isLoading } = useQuery({
     queryKey: ['function', id],
@@ -40,8 +40,7 @@ export function FunctionPage() {
   const testMutation = useMutation({
     mutationFn: () => testFunction(id!),
     onSuccess: async (data) => {
-      // Uppdatera cache med nya testresultat
-      queryClient.setQueryData(['function', id], (oldData: any) => ({
+      queryClient.setQueryData(['function', id], (oldData: { testResults?: TestResults }) => ({
         ...oldData,
         testResults: data
       }));
@@ -100,19 +99,6 @@ export function FunctionPage() {
     },
     onError: (error) => {
       console.error('Frontend: Error updating prompt:', error);
-    }
-  });
-
-  const updateOutputFormatMutation = useMutation({
-    mutationFn: (outputFormat: string) => updateFunctionOutputFormat(id!, outputFormat),
-    onSuccess: async (data) => {
-      console.log('Frontend: Output format update successful:', data);
-      await queryClient.invalidateQueries({ queryKey: ['function', id] });
-      setIsEditingOutputFormat(false);
-      setEditOutputFormat('');
-    },
-    onError: (error) => {
-      console.error('Frontend: Error updating output format:', error);
     }
   });
 
@@ -176,19 +162,16 @@ export function FunctionPage() {
     }
   };
 
-  const handleEditTest = (index: number, example: TestCase) => {
+  const handleEditTest = (index: number) => {
     setEditingIndex(index);
-    setEditTestInput(JSON.stringify(example.input, null, 2));
-    setEditTestOutput(JSON.stringify(example.output, null, 2));
+    setEditTestInput(JSON.stringify(func.examples[index].input, null, 2));
+    setEditTestOutput(JSON.stringify(func.examples[index].output, null, 2));
   };
 
-  const handleUpdateTest = () => {
-    if (editingIndex === null) return;
-
-    setJsonError(null);
+  const handleUpdateTest = (index: number) => {
     try {
-      const inputObj = JSON.parse(editTestInput) as Record<string, unknown>;
-      const outputObj = JSON.parse(editTestOutput) as Record<string, unknown>;
+      const inputObj = JSON.parse(editTestInput);
+      const outputObj = JSON.parse(editTestOutput);
       
       if (typeof inputObj !== 'object' || inputObj === null) {
         throw new Error('Input must be a JSON object');
@@ -197,28 +180,12 @@ export function FunctionPage() {
         throw new Error('Output must be a JSON object');
       }
 
-      const testCase = { input: inputObj, output: outputObj };
-      console.log('Frontend: Förbereder uppdatering:', { editingIndex, testCase });
-      
-      // Uppdatera lokalt först för bättre UX
-      const updatedExamples = [...func.examples];
-      updatedExamples[editingIndex] = testCase;
-      
-      // Uppdatera cache direkt
-      queryClient.setQueryData(['function', id], {
-        ...func,
-        examples: updatedExamples
-      });
-
-      // Skicka uppdateringen till servern
       updateTestMutation.mutate({ 
-        index: editingIndex, 
-        testCase 
+        index, 
+        testCase: { input: inputObj, output: outputObj }
       });
     } catch (err) {
-      const error = err as Error;
-      console.error('Frontend: Fel vid validering:', error);
-      setJsonError(error.message);
+      console.error('Error updating test:', err);
     }
   };
 
@@ -226,7 +193,6 @@ export function FunctionPage() {
     setEditingIndex(null);
     setEditTestInput('');
     setEditTestOutput('');
-    setJsonError(null);
   };
 
   const handleEditPrompt = () => {
@@ -244,32 +210,16 @@ export function FunctionPage() {
     setEditPrompt('');
   };
 
-  const handleEditOutputFormat = () => {
-    setEditOutputFormat(JSON.stringify(func?.exampleOutput, null, 2));
-    setIsEditingOutputFormat(true);
+  const handleCopyTest = (example: TestCase) => {
+    // Skapa en djup kopia av exemplet
+    const copiedExample = {
+      input: JSON.parse(JSON.stringify(example.input)),
+      output: JSON.parse(JSON.stringify(example.output))
+    };
+    addTestMutation.mutate(copiedExample);
   };
 
-  const handleUpdateOutputFormat = () => {
-    if (!editOutputFormat.trim()) return;
-    try {
-      const parsedOutput = JSON.parse(editOutputFormat);
-      if (typeof parsedOutput !== 'object' || parsedOutput === null) {
-        throw new Error('Output format must be a JSON object');
-      }
-      updateOutputFormatMutation.mutate(editOutputFormat);
-    } catch (err) {
-      const error = err as Error;
-      setJsonError(error.message);
-    }
-  };
-
-  const handleCancelOutputFormatEdit = () => {
-    setIsEditingOutputFormat(false);
-    setEditOutputFormat('');
-    setJsonError(null);
-  };
-
-  const TestResults = ({ results }: { results: TestResult[] }) => {
+  const TestResultsComponent = ({ results }: { results: TestResult[] }) => {
     if (!results) return null;
 
     return (
@@ -354,19 +304,20 @@ export function FunctionPage() {
         </div>
         {isEditingPrompt ? (
           <div className="space-y-4">
-            <textarea
+            <JsonInput
+              label="Prompt"
+              name="editPrompt"
+              register={() => ({})}
               value={editPrompt}
               onChange={(e) => setEditPrompt(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               rows={4}
             />
             <div className="flex gap-2">
               <button
                 onClick={handleUpdatePrompt}
-                disabled={updatePromptMutation.isPending}
-                className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
               >
-                {updatePromptMutation.isPending ? 'Saving...' : 'Save'}
+                Save
               </button>
               <button
                 onClick={handleCancelPromptEdit}
@@ -382,233 +333,46 @@ export function FunctionPage() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Output Format</h2>
-          {!isEditingOutputFormat && (
-            <button
-              onClick={handleEditOutputFormat}
-              className="px-3 py-1 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50"
-            >
-              Edit
-            </button>
-          )}
-        </div>
-        {isEditingOutputFormat ? (
-          <div className="space-y-4">
-            <textarea
-              value={editOutputFormat}
-              onChange={(e) => {
-                setEditOutputFormat(e.target.value);
-                setJsonError(null);
-              }}
-              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-                jsonError ? 'border-red-500' : ''
-              }`}
-              rows={4}
-            />
-            {jsonError && (
-              <p className="text-sm text-red-600">{jsonError}</p>
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={handleUpdateOutputFormat}
-                disabled={updateOutputFormatMutation.isPending}
-                className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {updateOutputFormatMutation.isPending ? 'Saving...' : 'Save'}
-              </button>
-              <button
-                onClick={handleCancelOutputFormatEdit}
-                className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <pre className="text-gray-700 whitespace-pre-wrap">
-            {JSON.stringify(func.exampleOutput, null, 2)}
-          </pre>
-        )}
-      </div>
-
-      <div className="bg-white shadow rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Examples</h2>
         <div className="space-y-4">
           {func.examples.map((example, index) => (
-            <div 
-              key={index} 
-              className={`border rounded-md p-4 ${
-                func.testResults?.results[index]?.success 
-                  ? 'bg-green-50 border-green-200' 
-                  : func.testResults?.results[index] 
-                    ? 'bg-red-50 border-red-200' 
-                    : ''
-              }`}
-            >
-              {editingIndex === index ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Input (JSON)
-                    </label>
-                    <textarea
-                      value={editTestInput}
-                      onChange={(e) => {
-                        setEditTestInput(e.target.value);
-                        setJsonError(null);
-                      }}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-                        jsonError ? 'border-red-500' : ''
-                      }`}
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Output (JSON)
-                    </label>
-                    <textarea
-                      value={editTestOutput}
-                      onChange={(e) => {
-                        setEditTestOutput(e.target.value);
-                        setJsonError(null);
-                      }}
-                      className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-                        jsonError ? 'border-red-500' : ''
-                      }`}
-                      rows={3}
-                    />
-                  </div>
-                  {jsonError && (
-                    <p className="text-sm text-red-600">{jsonError}</p>
-                  )}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleUpdateTest}
-                      disabled={updateTestMutation.isPending}
-                      className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {updateTestMutation.isPending ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="mb-2">
-                    <span className="font-medium text-gray-700">Input:</span>
-                    <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
-                      {JSON.stringify(example.input, null, 2)}
-                    </pre>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Output:</span>
-                    <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
-                      {JSON.stringify(example.output, null, 2)}
-                    </pre>
-                  </div>
-                  {func.testResults?.results[index] && (
-                    <div>
-                      <span className="font-medium text-gray-700">Actual Output:</span>
-                      <pre className="mt-1 text-gray-600 whitespace-pre-wrap">
-                        {JSON.stringify(func.testResults.results[index].actualOutput, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      onClick={() => handleEditTest(index, example)}
-                      className="px-3 py-1 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => removeTestMutation.mutate(index)}
-                      className="px-3 py-1 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <ExampleCard
+              key={index}
+              index={index}
+              value={editingIndex === index ? {
+                input: editTestInput,
+                output: editTestOutput
+              } : {
+                input: JSON.stringify(example.input, null, 2),
+                output: JSON.stringify(example.output, null, 2)
+              }}
+              onChange={(field, value) => {
+                if (field === 'input') setEditTestInput(value);
+                if (field === 'output') setEditTestOutput(value);
+              }}
+              onRemove={func.examples.length > 1 ? () => removeTestMutation.mutate(index) : undefined}
+              onCopy={() => handleCopyTest(example)}
+              onEdit={() => handleEditTest(index)}
+              onSave={() => handleUpdateTest(index)}
+              onCancel={handleCancelEdit}
+              isEditing={editingIndex === index}
+              testResult={func.testResults?.results[index]}
+            />
           ))}
-        </div>
-      </div>
-
-      <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Add Test Case</h2>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="newTestInput" className="block text-sm font-medium text-gray-700">
-              Input (JSON)
-            </label>
-            <textarea
-              id="newTestInput"
-              value={newTestInput}
-              onChange={(e) => {
-                setNewTestInput(e.target.value);
-                setJsonError(null);
-              }}
-              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-                jsonError ? 'border-red-500' : ''
-              }`}
-              rows={3}
-              placeholder='{"test": 1}'
-            />
-            {jsonError && (
-              <p className="mt-1 text-sm text-red-600">{jsonError}</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="newTestOutput" className="block text-sm font-medium text-gray-700">
-              Output (JSON)
-            </label>
-            <textarea
-              id="newTestOutput"
-              value={newTestOutput}
-              onChange={(e) => {
-                setNewTestOutput(e.target.value);
-                setJsonError(null);
-              }}
-              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-                jsonError ? 'border-red-500' : ''
-              }`}
-              rows={3}
-              placeholder='{"result": "test"}'
-            />
-          </div>
-          <button
-            onClick={handleAddTest}
-            disabled={addTestMutation.isPending || !newTestInput.trim() || !newTestOutput.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
-          >
-            {addTestMutation.isPending ? 'Adding...' : 'Add Test Case'}
-          </button>
         </div>
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Run Function</h2>
         <div className="space-y-4">
-          <div>
-            <label htmlFor="input" className="block text-sm font-medium text-gray-700">
-              Input
-            </label>
-            <textarea
-              id="input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              rows={4}
-            />
-          </div>
+          <JsonInput
+            label="Input"
+            name="input"
+            register={() => ({})}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={4}
+          />
           <button
             onClick={() => runMutation.mutate({ input: JSON.parse(input) })}
             disabled={runMutation.isPending || !input.trim()}
@@ -663,6 +427,10 @@ export function FunctionPage() {
           {improveMutation.isPending ? 'Improving...' : 'Improve Function'}
         </button>
       </div>
+
+      {func.testResults?.results && (
+        <TestResultsComponent results={func.testResults.results} />
+      )}
     </div>
   );
 } 

@@ -1,6 +1,6 @@
 export interface Example {
-  input: Record<string, any>;
-  output: Record<string, any>;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
 }
 
 export interface TestCase {
@@ -9,9 +9,9 @@ export interface TestCase {
 }
 
 export interface TestResult {
-  input: Record<string, any>;
-  expectedOutput: Record<string, any>;
-  actualOutput: Record<string, any>;
+  input: Record<string, unknown>;
+  expectedOutput: Record<string, unknown>;
+  actualOutput: Record<string, unknown>;
   success: boolean;
 }
 
@@ -27,29 +27,27 @@ export interface TestResults {
 export interface LLMFunction {
   identifier: string;
   prompt: string;
-  exampleOutput: Record<string, any>;
   examples: Array<{
-    input: Record<string, any>;
-    output: Record<string, any>;
+    input: Record<string, unknown>;
+    output: Record<string, unknown>;
   }>;
   testResults?: TestResults;
 }
 
 export interface CreateFunctionRequest {
   prompt: string;
-  exampleOutput: Record<string, any>;
   examples: Array<{
-    input: Record<string, any>;
-    output: Record<string, any>;
+    input: Record<string, unknown>;
+    output: Record<string, unknown>;
   }>;
 }
 
 export interface RunFunctionRequest {
-  input: Record<string, any>;
+  input: Record<string, unknown>;
 }
 
 export interface RunFunctionResponse {
-  output: Record<string, any>;
+  output: Record<string, unknown>;
 }
 
 export interface TestFunctionResponse {
