@@ -103,7 +103,10 @@ export function FunctionPage() {
     mutationFn: (prompt: string) => updateFunctionPrompt(id!, prompt),
     onSuccess: async (data) => {
       console.log('Frontend: Prompt update successful:', data);
-      await queryClient.invalidateQueries({ queryKey: ['function', id] });
+      await queryClient.setQueryData(['function', id], (oldData: any) => ({
+        ...oldData,
+        prompt: data.data.prompt
+      }));
       setIsEditingPrompt(false);
       setEditPrompt('');
     },

@@ -40,7 +40,7 @@ class CodeRunner {
         const generatedCode = await mockache.gpt4SingleMessage(codeGenerationPrompt, { prompt, exampleCode }, exampleCode);
 
         
-        //console.log('Generated code:', generatedCode);
+        console.log('Generated code:', generatedCode);
         // Extrahera koden från JSON-svaret
         const code = generatedCode.code ? generatedCode.code : generatedCode;
         
