@@ -21,7 +21,9 @@ describe('Container Tests', () => {
         };`;
 
         const response = await codeRunner.execute(sourceCode, testIdentifier, { value: 5 });
-        expect(response).toBeDefined();
-        expect(response.sum).toBe(10);
+
+        //console.log('Response:', response);
+        expect(response.output).toBeDefined();
+        expect(response.output.sum).toBe(10);
     }, 10000); // Öka timeout till 10 sekunder
 }); 

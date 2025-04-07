@@ -80,7 +80,7 @@ class LLMFunction {
             const codeRunner = new CodeRunner();
             const code = await codeRunner.generateCode(this.prompt, this.examples, mockache);
 
-            console.log('runWithCode::Generated code:', code);
+            //console.log('runWithCode::Generated code:', code);
             return await codeRunner.execute(code, this.identifier, inputJson);
         } catch (error) {
             throw new FunctionExecutionError(`Failed to run function with code: ${error.message}`);

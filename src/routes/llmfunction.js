@@ -73,8 +73,9 @@ function setupRoutes(app, controller) {
             }
             const output = await controller.runFunctionWithCode(req.params.identifier, req.body);
 
-            console.log('Output:', output.output);
-            res.json(output.output);
+            const ret = output.output ? output.output : output;
+            console.log('Output:', ret);
+            res.json(ret);
             
         } catch (error) {
             console.error('Error in runcode:', error);

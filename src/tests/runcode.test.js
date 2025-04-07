@@ -50,9 +50,7 @@ describe('Run functions with code', () => {
 
         console.log(response.body);
         expect(response.status).toBe(200);
-        expect(response.body).toHaveProperty('output');
-        expect(response.body).toHaveProperty('status');
-        expect(response.body.status).toBe('completed');
+        expect(response.body.sum).toBe(10);
     }, 10000);
 
     /*test('returns 404 when running non-existent function with code', async () => {

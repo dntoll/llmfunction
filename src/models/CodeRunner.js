@@ -40,9 +40,9 @@ class CodeRunner {
         const generatedCode = await mockache.gpt4SingleMessage(codeGenerationPrompt, { prompt, exampleCode }, exampleCode);
 
         
-        
+        //console.log('Generated code:', generatedCode);
         // Extrahera koden från JSON-svaret
-        const code = generatedCode.code
+        const code = generatedCode.code ? generatedCode.code : generatedCode;
         
         // Validera att koden innehåller en result-variabel
         if (!code.includes('const result =') && !code.includes('let result =')) {
@@ -79,20 +79,20 @@ class CodeRunner {
         // Lägg till input parsing och output formatting
         const completeCode = `
 // Read input from command line arguments
-console.log('Received input:', process.argv[2]);
+//console.log('Received input:', process.argv[2]);
 const rawInput = JSON.parse(process.argv[2]);
 const input = rawInput.input;  // Extrahera det faktiska input-objektet
-console.log('Parsed input:', input);
+//console.log('Parsed input:', input);
 
 // Process the input according to the prompt
 ${sourceCode}
 
 // Output the result
-console.log('Result:', result);
+//console.log('Result:', result);
 console.log('Stringified result:', JSON.stringify(result));
 `;
 
-        console.log('Complete code:', completeCode);
+        //console.log('Complete code:', completeCode);
 
         return await this.containerClient.execute(completeCode, functionId, inputJson);
     }
