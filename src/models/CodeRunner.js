@@ -87,34 +87,17 @@ class CodeRunner {
     async execute(sourceCode, functionId, inputJson) {
         // Lägg till input parsing och output formatting
         const completeCode = `
-// Read input from command line arguments
-console.log('Received input:', process.argv[2]);
-const rawInput = JSON.parse(process.argv[2]);
-const input = rawInput.input ? rawInput.input : rawInput;  // Extrahera det faktiska input-objektet
-console.log('Parsed input:', input);
-
 // Process the input according to the prompt
 ${sourceCode}
 
-// Output the result
-//console.log('Result:', result);
-console.log('Stringified result:', JSON.stringify(result));
+// Return the result
+return result;
 `;
 
-        //console.log('Complete code:', completeCode);
-
+        console.log('Executing code with input:', JSON.stringify(inputJson, null, 2));
         const outputLines = await this.containerClient.execute(completeCode, functionId, inputJson);
-
-        const resultLine = outputLines.find(line => line.includes('Stringified result:'));
-        if (!resultLine) {
-            throw new Error('No result found in output');
-        }
-        const jsonStr = resultLine.split('Stringified result:')[1].trim();
-        //console.log('JSON string:', jsonStr);
-        const result = JSON.parse(jsonStr);
-        //console.log('Result:', result);
-
-        return result;
+        console.log('Execution result:', JSON.stringify(outputLines, null, 2));
+        return outputLines;
     }
 
     async cleanup(functionId) {

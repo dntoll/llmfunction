@@ -50,6 +50,7 @@ Thumbs.db
 
 # Ignorera alla filer i functions-mappen utom keep-filen
 data/functions/*
+data/containers/*
 !data/functions/keep
 
 # Temporary files
