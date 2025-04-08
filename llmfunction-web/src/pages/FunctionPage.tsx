@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, runFunctionWithCode, getFunctionCode } from '../services/api';
-import type { RunFunctionRequest, TestCase, TestResult, TestResults } from '../types/api';
-import { useState } from 'react';
+import type { RunFunctionRequest, TestCase, TestResult, TestResults, LLMFunction } from '../types/api';
+import { useState, useEffect } from 'react';
 import { JsonInput } from '../components/JsonInput';
 import { ExampleCard } from '../components/ExampleCard';
 
@@ -22,8 +22,14 @@ export function FunctionPage() {
 
   const { data: func, isLoading } = useQuery({
     queryKey: ['function', id],
-    queryFn: () => getFunction(id!),
+    queryFn: () => getFunction(id!)
   });
+
+  useEffect(() => {
+    if (func?.examples && func.examples.length > 0) {
+      setInput(JSON.stringify(func.examples[0].input, null, 2));
+    }
+  }, [func]);
 
   const { data: generatedCode, isLoading: isCodeLoading } = useQuery({
     queryKey: ['functionCode', id],
