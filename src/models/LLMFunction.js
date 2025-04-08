@@ -102,6 +102,7 @@ class LLMFunction {
 
             return await codeRunner.execute(this.generatedCode, this.identifier, inputJson);
         } catch (error) {
+            console.error("error: ", error);
             throw new FunctionExecutionError(`Failed to run function with code: ${error.message}`);
         }
     }
@@ -192,8 +193,15 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
 
     async runAllExamplesWithCode(mockache) {
         const results = [];
+
+        console.log("Running all examples with code");
+
+
         for (const example of this.examples) {
+            console.log("example: ", example);
             const output = await this.runWithCode(mockache, example.input);
+
+            
             const success = JSON.stringify(output) === JSON.stringify(example.output);
             results.push({
                 input: example.input,
@@ -201,6 +209,7 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
                 actualOutput: output,
                 success
             });
+            
         }
         
         const totalTests = results.length;
@@ -217,6 +226,8 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
         };
 
         this.testResults = testResults;
+
+        console.log(testResults);
         return testResults;
     }
 

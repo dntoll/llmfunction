@@ -88,10 +88,10 @@ class CodeRunner {
         // Lägg till input parsing och output formatting
         const completeCode = `
 // Read input from command line arguments
-//console.log('Received input:', process.argv[2]);
+console.log('Received input:', process.argv[2]);
 const rawInput = JSON.parse(process.argv[2]);
-const input = rawInput.input;  // Extrahera det faktiska input-objektet
-//console.log('Parsed input:', input);
+const input = rawInput.input ? rawInput.input : rawInput;  // Extrahera det faktiska input-objektet
+console.log('Parsed input:', input);
 
 // Process the input according to the prompt
 ${sourceCode}

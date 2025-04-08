@@ -98,7 +98,7 @@ ENTRYPOINT ["node", "index.js"]
 
     async runContainer(containerInfo, input) {
         return new Promise((resolve, reject) => {
-            //console.log('Running container with input:', JSON.stringify(input));
+            console.log('Running container with input:', JSON.stringify(input));
             const run = spawn('docker', [
                 'run',
                 '--rm',
@@ -121,9 +121,9 @@ ENTRYPOINT ["node", "index.js"]
             });
 
             run.on('close', (code) => {
-                //console.log('Container exited with code:', code);
-                //console.log('Container output:', output);
-                //console.log('Container error:', error);
+                console.log('Container exited with code:', code);
+                console.log('Container output:', output);
+                console.log('Container error:', error);
                 
                 if (code !== 0) {
                     reject(new Error(`Container execution failed: ${error}`));
@@ -141,7 +141,7 @@ ENTRYPOINT ["node", "index.js"]
                     //console.log('JSON string:', jsonStr);
                     const result = JSON.parse(jsonStr);
                     //console.log('Result:', result);
-                    resolve({ output: result });
+                    resolve( result );
                 } catch (e) {
                     
                     reject(new Error(`Failed to parse container output: ${e}`));

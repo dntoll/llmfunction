@@ -50,9 +50,13 @@ export interface RunFunctionResponse {
   output: Record<string, unknown>;
 }
 
-export interface TestFunctionResponse {
-  success: boolean;
-  message: string;
+export interface TestFunctionResponse extends TestResults {
+  identifier: string;
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  results: TestResult[];
+  lastRun: string;
 }
 
 export interface ImproveFunctionResponse {

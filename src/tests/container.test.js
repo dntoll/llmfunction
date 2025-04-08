@@ -20,6 +20,6 @@ describe('Container Tests', () => {
             sum: 10 
         };`;
         const result = await codeRunner.execute(sourceCode, testIdentifier, { a: 5, b: 5 });
-        expect(result).toEqual({ output: { sum: 10 } });
+        expect(result).toEqual( { sum: 10 } );
     }, 30000);
 }); 
