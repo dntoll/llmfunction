@@ -52,16 +52,13 @@ function setupRoutes(app, controller) {
     // POST endpoint for llmfunction/run
     app.post('/llmfunction/run/:identifier', async (req, res) => {
         try {
+            console.log('run');
             const result = await controller.runFunction(req.params.identifier, req.body);
+            console.log('Output:', result);
             res.json(result);
         } catch (error) {
-            if (error instanceof FunctionNotFoundError) {
-                res.status(404).json({ error: error.message });
-            } else if (error instanceof FunctionExecutionError) {
-                res.status(400).json({ error: error.message });
-            } else {
-                res.status(500).json({ error: error.message });
-            }
+            console.error('run failed', error);
+            handleError(error, res);
         }
     });
 

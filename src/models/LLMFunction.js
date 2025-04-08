@@ -67,8 +67,15 @@ class LLMFunction {
     }
 
     async run(mockache, inputJson) {
-        const ret = await mockache.gpt4SingleMessage(this.prompt, inputJson, this.examples[0].output);
-        return ret;
+        try {
+            const ret = await mockache.gpt4SingleMessage(this.prompt, inputJson, this.examples[0].output);
+            return ret;
+        } catch (error) {
+            if (error.isAxiosError) {
+                throw new FunctionExecutionError(`Could not reach Mockache server: ${error.message}. Please check if the server is running and that the network connection is working.`);
+            }
+            throw new FunctionExecutionError(`Failed to run function: ${error.message}`);
+        }
     }
 
     async runWithCode(mockache, inputJson) {

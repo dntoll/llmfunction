@@ -28,6 +28,7 @@ class CodeRunner {
         Do not include any input parsing or output formatting - that is already handled.
         Do not include any console.log statements or other output formatting.
         Do not include any error handling or try-catch blocks.
+        The result should be a const variable called "result" as in the example code. Even if there is a result variable in the json output.
         `;
 
         const exampleCode = {
@@ -44,10 +45,13 @@ class CodeRunner {
         // Extrahera koden från JSON-svaret
         const code = generatedCode.code ? generatedCode.code : generatedCode;
         
-        // Validera att koden innehåller en result-variabel
-        if (!code.includes('const result =') && !code.includes('let result =')) {
-            throw new Error('Generated code must create a result variable');
-        }
+        try {
+            //code is json, make it a string
+            const stringCode = JSON.stringify(code);
+            // Validera att koden innehåller en result-variabel
+            if (!stringCode.includes('const result =') && !stringCode.includes('let result =')) {
+                throw new Error('Generated code must create a result variable');
+            }
 
         // Validera att koden inte innehåller förbjudna konstruktioner
         const forbiddenPatterns = [
@@ -64,10 +68,15 @@ class CodeRunner {
             'module.exports'
         ];
 
-        for (const pattern of forbiddenPatterns) {
-            if (code.includes(pattern)) {
-                throw new Error(`Generated code contains forbidden pattern: ${pattern}`);
+            for (const pattern of forbiddenPatterns) {
+                if (stringCode.includes(pattern)) {
+                    
+                    throw new Error(`Generated code contains forbidden pattern: ${pattern}`);
+                }
             }
+        } catch (error) {
+            console.error(code);
+            throw new Error(`Generated code contains forbidden pattern: ${error} `);
         }
 
         

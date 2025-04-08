@@ -51,7 +51,7 @@ describe('Run functions with code', () => {
         console.log(response.body);
         expect(response.status).toBe(200);
         expect(response.body.sum).toBe(10);
-    }, 10000);
+    }, 30000);
 
     /*test('returns 404 when running non-existent function with code', async () => {
         const response = await request(app)

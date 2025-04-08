@@ -67,7 +67,7 @@ ${exampleOutputJSONSTring}`;
             "OpenAI-Organization": this.#OPENAI_API_ORG
         };
 
-        console.log("START", message, "END")
+        //console.log("START", message, "END")
         
         return this.#post(model, messages, headers)
     }

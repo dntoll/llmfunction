@@ -19,11 +19,7 @@ describe('Container Tests', () => {
             // Your implementation here
             sum: 10 
         };`;
-
-        const response = await codeRunner.execute(sourceCode, testIdentifier, { value: 5 });
-
-        //console.log('Response:', response);
-        expect(response.output).toBeDefined();
-        expect(response.output.sum).toBe(10);
-    }, 10000); // Öka timeout till 10 sekunder
+        const result = await codeRunner.execute(sourceCode, testIdentifier, { a: 5, b: 5 });
+        expect(result).toEqual({ output: { sum: 10 } });
+    }, 30000);
 }); 

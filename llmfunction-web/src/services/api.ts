@@ -95,17 +95,13 @@ export async function removeFunction(id: string): Promise<void> {
 }
 
 export const runFunction = async (id: string, data: RunFunctionRequest): Promise<RunFunctionResponse> => {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}/llmfunction/run/${id}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to run function');
+  try {
+    const response = await api.post<RunFunctionResponse>(`/llmfunction/run/${id}`, data);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
   }
-  return response.json();
 };
 
 export const runFunctionWithCode = async (id: string, data: RunFunctionRequest): Promise<RunFunctionResponse> => {
