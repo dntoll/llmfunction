@@ -103,7 +103,18 @@ console.log('Stringified result:', JSON.stringify(result));
 
         //console.log('Complete code:', completeCode);
 
-        return await this.containerClient.execute(completeCode, functionId, inputJson);
+        const outputLines = await this.containerClient.execute(completeCode, functionId, inputJson);
+
+        const resultLine = outputLines.find(line => line.includes('Stringified result:'));
+        if (!resultLine) {
+            throw new Error('No result found in output');
+        }
+        const jsonStr = resultLine.split('Stringified result:')[1].trim();
+        //console.log('JSON string:', jsonStr);
+        const result = JSON.parse(jsonStr);
+        //console.log('Result:', result);
+
+        return result;
     }
 
     async cleanup(functionId) {

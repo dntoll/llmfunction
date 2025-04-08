@@ -133,15 +133,8 @@ ENTRYPOINT ["node", "index.js"]
                 try {
                     // Hitta den sista raden som innehåller "Stringified result:"
                     const lines = output.split('\n');
-                    const resultLine = lines.find(line => line.includes('Stringified result:'));
-                    if (!resultLine) {
-                        throw new Error('No result found in output');
-                    }
-                    const jsonStr = resultLine.split('Stringified result:')[1].trim();
-                    //console.log('JSON string:', jsonStr);
-                    const result = JSON.parse(jsonStr);
-                    //console.log('Result:', result);
-                    resolve( result );
+                    
+                    resolve( lines );
                 } catch (e) {
                     
                     reject(new Error(`Failed to parse container output: ${e}`));
