@@ -56,6 +56,7 @@ export function FunctionPage() {
     mutationFn: (data: RunFunctionRequest) => runFunctionWithCode(id!, data),
     onSuccess: () => {
       runMutation.reset();
+      queryClient.invalidateQueries({ queryKey: ['functionCode', id] });
     }
   });
 
