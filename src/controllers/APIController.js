@@ -50,6 +50,16 @@ class APIController {
         return data;
     }
 
+    async getFunctionCode(identifier) {
+        if (!this.initialized) await this.initialize();
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+        return data.generatedCode || null;
+    }
+
     async removeFunction(identifier) {
         if (!this.initialized) await this.initialize();
         

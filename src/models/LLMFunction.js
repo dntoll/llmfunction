@@ -2,6 +2,7 @@ const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError }
 const ContainerClient = require('./ContainerClient');
 const CodeRunner = require('./CodeRunner');
 const crypto = require('crypto');
+const StorageService = require('../services/StorageService');
 
 class LLMFunction {
 
@@ -32,6 +33,7 @@ class LLMFunction {
         this.examples = examples;
         this.identifier = this.#generateIdentifier();
         this.testResults = null; // Lagrar senaste testresultaten
+        this.generatedCode = null; // Lagrar genererad kod
     }
 
     static fromJSON(data) {
@@ -43,6 +45,10 @@ class LLMFunction {
         // Behåll testresultaten om de finns
         if (data.testResults) {
             llmFunction.testResults = data.testResults;
+        }
+        // Behåll genererad kod om den finns
+        if (data.generatedCode) {
+            llmFunction.generatedCode = data.generatedCode;
         }
         return llmFunction;
     }
@@ -62,7 +68,8 @@ class LLMFunction {
             identifier: this.identifier,
             prompt: this.prompt,
             examples: this.examples,
-            testResults: this.testResults
+            testResults: this.testResults,
+            generatedCode: this.generatedCode
         };
     }
 
@@ -85,10 +92,15 @@ class LLMFunction {
             }
 
             const codeRunner = new CodeRunner();
-            const code = await codeRunner.generateCode(this.prompt, this.examples, mockache);
+            
+            // Generera ny kod endast om den inte finns eller om funktionen har ändrats
+            if (!this.generatedCode || this.hasChangedSinceLastTest()) {
+                this.generatedCode = await codeRunner.generateCode(this.prompt, this.examples, mockache);
+                // Spara funktionen efter att koden har genererats
+                await this.save();
+            }
 
-            //console.log('runWithCode::Generated code:', code);
-            return await codeRunner.execute(code, this.identifier, inputJson);
+            return await codeRunner.execute(this.generatedCode, this.identifier, inputJson);
         } catch (error) {
             throw new FunctionExecutionError(`Failed to run function with code: ${error.message}`);
         }
@@ -183,7 +195,14 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
         if (!this.testResults) return true;
         
         const currentIdentifier = this.#generateIdentifier();
-        return currentIdentifier !== this.identifier;
+        const hasChanged = currentIdentifier !== this.identifier;
+        
+        // Om funktionen har ändrats, rensa den genererade koden
+        if (hasChanged) {
+            this.generatedCode = null;
+        }
+        
+        return hasChanged;
     }
 
     // Metod för att rensa testresultat om funktionen har ändrats
@@ -196,6 +215,12 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
     // Metod för att rensa testresultat
     clearTestResults() {
         this.testResults = null;
+    }
+
+    async save() {
+        const storageService = new StorageService();
+        await storageService.initialize();
+        await storageService.saveFunction(this.identifier, this.toJSON());
     }
 }
 

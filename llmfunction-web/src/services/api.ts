@@ -180,17 +180,24 @@ export const updateTestInFunction = async (id: string, index: number, testCase: 
 };
 
 export const updateFunctionPrompt = async (id: string, prompt: string) => {
-  const response = await fetch(`/api/functions/${id}/prompt`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ prompt }),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update function prompt');
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/llmfunction/update-prompt/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      throw await handleError(response);
+    }
+
+    return response.json();
+  } catch (error) {
+    handleError(error);
+    throw error;
   }
-  return response.json();
 };
 
 export const updateFunctionOutputFormat = async (id: string, outputFormat: string) => {
@@ -218,6 +225,14 @@ export const getFunctions = async (): Promise<LLMFunction[]> => {
   const response = await fetch(`${import.meta.env.VITE_API_URL}/llmfunction/list`);
   if (!response.ok) {
     throw new Error('Failed to fetch functions');
+  }
+  return response.json();
+};
+
+export const getFunctionCode = async (id: string) => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/llmfunction/code/${id}`);
+  if (!response.ok) {
+    throw new Error('Failed to get function code');
   }
   return response.json();
 }; 
