@@ -190,6 +190,36 @@ Make sure the new prompt reflects all necessary behavior to satisfy the expected
         return testResults;
     }
 
+    async runAllExamplesWithCode(mockache) {
+        const results = [];
+        for (const example of this.examples) {
+            const output = await this.runWithCode(mockache, example.input);
+            const success = JSON.stringify(output) === JSON.stringify(example.output);
+            results.push({
+                input: example.input,
+                expectedOutput: example.output,
+                actualOutput: output,
+                success
+            });
+        }
+        
+        const totalTests = results.length;
+        const passedTests = results.filter(r => r.success).length;
+        const failedTests = totalTests - passedTests;
+
+        const testResults = {
+            identifier: this.identifier,
+            totalTests,
+            passedTests,
+            failedTests,
+            results,
+            lastRun: new Date().toISOString()
+        };
+
+        this.testResults = testResults;
+        return testResults;
+    }
+
     // Metod för att kontrollera om funktionen har ändrats sedan senaste testet
     hasChangedSinceLastTest() {
         if (!this.testResults) return true;

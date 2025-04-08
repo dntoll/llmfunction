@@ -128,6 +128,16 @@ export async function testFunction(id: string): Promise<TestFunctionResponse> {
   }
 }
 
+export async function testFunctionWithCode(id: string): Promise<TestFunctionResponse> {
+  try {
+    const response = await api.post<TestFunctionResponse>(`/llmfunction/test-with-code/${id}`);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
+
 export async function improveFunction(id: string): Promise<ImproveFunctionResponse> {
   try {
     const response = await api.post<ImproveFunctionResponse>(`/llmfunction/improve/${id}`);

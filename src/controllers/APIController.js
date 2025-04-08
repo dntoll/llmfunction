@@ -128,6 +128,26 @@ class APIController {
         return testResults;
     }
 
+    async testFunctionWithCode(identifier) {
+        if (!this.initialized) await this.initialize();
+        
+        if (!this.mockache) {
+            throw new FunctionExecutionError('Mockache is not initialized');
+        }
+        
+        const data = await this.storageService.loadFunction(identifier);
+        if (!data) {
+            throw new FunctionNotFoundError(identifier);
+        }
+        const llmFunction = LLMFunction.fromJSON(data);
+        const testResults = await llmFunction.runAllExamplesWithCode(this.mockache);
+        
+        // Spara den uppdaterade funktionen med testresultaten
+        await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
+        
+        return testResults;
+    }
+
     async improveFunction(identifier) {
         if (!this.initialized) await this.initialize();
         

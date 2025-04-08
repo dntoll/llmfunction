@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFunction, removeFunction, runFunction, testFunction, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, runFunctionWithCode, getFunctionCode } from '../services/api';
+import { getFunction, removeFunction, runFunction, testFunction, testFunctionWithCode, improveFunction, addTestToFunction, removeTestFromFunction, updateTestInFunction, updateFunctionPrompt, runFunctionWithCode, getFunctionCode } from '../services/api';
 import type { RunFunctionRequest, TestCase, TestResult, TestResults, LLMFunction } from '../types/api';
 import { useState, useEffect } from 'react';
 import { JsonInput } from '../components/JsonInput';
@@ -62,6 +62,16 @@ export function FunctionPage() {
 
   const testMutation = useMutation({
     mutationFn: () => testFunction(id!),
+    onSuccess: async (data) => {
+      queryClient.setQueryData(['function', id], (oldData: { testResults?: TestResults }) => ({
+        ...oldData,
+        testResults: data
+      }));
+    },
+  });
+
+  const testWithCodeMutation = useMutation({
+    mutationFn: () => testFunctionWithCode(id!),
     onSuccess: async (data) => {
       queryClient.setQueryData(['function', id], (oldData: { testResults?: TestResults }) => ({
         ...oldData,
@@ -449,12 +459,12 @@ export function FunctionPage() {
         </div>
       </div>
 
-      {(runMutation.data || runWithCodeMutation.data || testMutation.data || improveMutation.data || addTestMutation.data) && (
+      {(runMutation.data || runWithCodeMutation.data || testMutation.data || testWithCodeMutation.data || improveMutation.data || addTestMutation.data) && (
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Results</h2>
           <div className="bg-gray-50 p-4 rounded-md">
             <pre className="whitespace-pre-wrap text-sm text-gray-700">
-              {runWithCodeMutation.data ? JSON.stringify(runWithCodeMutation.data, null, 2) : renderResult(runMutation.data || testMutation.data || addTestMutation.data)}
+              {runWithCodeMutation.data ? JSON.stringify(runWithCodeMutation.data, null, 2) : renderResult(runMutation.data || testMutation.data || testWithCodeMutation.data || addTestMutation.data)}
             </pre>
             {improveMutation.data && (
               <div className="mt-4">
@@ -481,9 +491,16 @@ export function FunctionPage() {
         <button
           onClick={() => testMutation.mutate()}
           disabled={testMutation.isPending}
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
           {testMutation.isPending ? 'Testing...' : 'Test Function'}
+        </button>
+        <button
+          onClick={() => testWithCodeMutation.mutate()}
+          disabled={testWithCodeMutation.isPending}
+          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+        >
+          {testWithCodeMutation.isPending ? 'Testing with Code...' : 'Test Function with Code'}
         </button>
         <button
           onClick={() => improveMutation.mutate()}

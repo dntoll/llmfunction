@@ -133,6 +133,21 @@ function setupRoutes(app, controller) {
         }
     });
 
+    app.post('/llmfunction/test-with-code/:identifier', async (req, res) => {
+        try {
+            const result = await controller.testFunctionWithCode(req.params.identifier);
+            res.json(result);
+        } catch (error) {
+            if (error instanceof FunctionNotFoundError) {
+                res.status(404).json({ error: error.message });
+            } else if (error instanceof FunctionExecutionError) {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    });
+
     app.post('/llmfunction/improve/:identifier', async (req, res) => {
         try {
             const result = await controller.improveFunction(req.params.identifier);
