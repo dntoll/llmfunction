@@ -57,7 +57,7 @@ function setupRoutes(app, controller) {
             console.log('Output:', result);
             res.json(result);
         } catch (error) {
-            console.error('run failed', error);
+            //console.error('run failed', error);
             handleError(error, res);
         }
     });
