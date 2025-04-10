@@ -11,12 +11,12 @@ class ContainerClient {
         this.portCounter = 3001;
         this.containersDir = path.join(process.cwd(), 'data', 'containers');
         this.networkName = 'llmfunction-network';
-        this.initializeContainersDir();
-        this.initializeNetwork();
+        this.#initializeContainersDir();
+        this.#initializeNetwork();
         console.log('ContainerClient initialized');
     }
 
-    async initializeContainersDir() {
+    async #initializeContainersDir() {
         try {
             await fs.mkdir(this.containersDir, { recursive: true });
         } catch (error) {
@@ -24,7 +24,7 @@ class ContainerClient {
         }
     }
 
-    async loadContainerInfo(functionId) {
+    async #loadContainerInfo(functionId) {
         try {
             const containerFile = path.join(this.containersDir, `${functionId}.json`);
             const data = await fs.readFile(containerFile, 'utf8');
@@ -34,7 +34,7 @@ class ContainerClient {
         }
     }
 
-    async saveContainerInfo(functionId, containerInfo) {
+    async #saveContainerInfo(functionId, containerInfo) {
         try {
             const filePath = path.join(this.containersDir, `${functionId}.json`);
             await fs.writeFile(filePath, JSON.stringify(containerInfo, null, 2));
@@ -45,7 +45,7 @@ class ContainerClient {
         }
     }
 
-    async removeContainerInfo(functionId) {
+    async #removeContainerInfo(functionId) {
         try {
             const containerFile = path.join(this.containersDir, `${functionId}.json`);
             await fs.unlink(containerFile);
@@ -54,7 +54,7 @@ class ContainerClient {
         }
     }
 
-    async initializeNetwork() {
+    async #initializeNetwork() {
         // Skapa Docker-nätverket om det inte finns
         const create = spawn('docker', ['network', 'create', this.networkName]);
         create.on('error', (err) => {
@@ -64,11 +64,11 @@ class ContainerClient {
         });
     }
 
-    async getContainer(functionId) {
+    async #getContainer(functionId) {
         console.log(`[ContainerClient] Getting container info for function ${functionId}`);
         
         // Försök ladda container-information från fil
-        const containerInfo = await this.loadContainerInfo(functionId);
+        const containerInfo = await this.#loadContainerInfo(functionId);
         if (!containerInfo) {
             console.log(`[ContainerClient] No container info found in file for function ${functionId}`);
             return null;
@@ -98,7 +98,7 @@ class ContainerClient {
             // Om containern inte hittades, ta bort container-informationen
             if (!inspect) {
                 console.log(`[ContainerClient] Container not running, removing container info`);
-                await this.removeContainerInfo(functionId);
+                await this.#removeContainerInfo(functionId);
                 return null;
             }
 
@@ -109,16 +109,16 @@ class ContainerClient {
             return containerInfo;
         } catch (error) {
             console.error(`[ContainerClient] Error checking container status:`, error);
-            await this.removeContainerInfo(functionId);
+            await this.#removeContainerInfo(functionId);
             return null;
         }
     }
 
-    async createContainer(sourceCode, functionId) {
+    async #createContainer(sourceCode, functionId) {
         console.log(`[ContainerClient] Creating container for function ${functionId}`);
         
         // Kolla om containern redan finns och kör
-        let containerInfo = await this.getContainer(functionId);
+        let containerInfo = await this.#getContainer(functionId);
         
         // Om containern finns och kör, kolla om källkoden har ändrats
         if (containerInfo) {
@@ -297,15 +297,15 @@ CMD ["node", "server.js"]
 
         try {
             // Spara container-informationen till fil INNAN vi försöker starta containern
-            await this.saveContainerInfo(functionId, containerInfo);
+            await this.#saveContainerInfo(functionId, containerInfo);
             console.log(`[ContainerClient] Saved container info to file before starting container for function ${functionId}`);
 
             // Bygg och starta containern
             console.log(`[ContainerClient] Building image for function ${functionId}`);
-            await this.buildImage(containerInfo);
+            await this.#buildImage(containerInfo);
             
             console.log(`[ContainerClient] Starting container for function ${functionId}`);
-            await this.startContainer(containerInfo);
+            await this.#startContainer(containerInfo);
             
             console.log(`[ContainerClient] Container started successfully for function ${functionId}`);
 
@@ -327,12 +327,12 @@ CMD ["node", "server.js"]
         } catch (error) {
             console.error('[ContainerClient] Failed to create container:', error);
             // Om containern misslyckas, ta bort container-informationen
-            await this.removeContainerInfo(functionId);
+            await this.#removeContainerInfo(functionId);
             throw error;
         }
     }
 
-    async buildImage(containerInfo) {
+    async #buildImage(containerInfo) {
         console.log(`[ContainerClient] Building Docker image for function ${containerInfo.id}`);
         return new Promise((resolve, reject) => {
             const build = spawn('docker', [
@@ -370,7 +370,7 @@ CMD ["node", "server.js"]
         });
     }
 
-    async startContainer(containerInfo) {
+    async #startContainer(containerInfo) {
         return new Promise((resolve, reject) => {
             console.log(`Starting container ${containerInfo.containerName} on port ${containerInfo.port}`);
             
@@ -407,17 +407,22 @@ CMD ["node", "server.js"]
                 console.log(`Container started with ID: ${containerInfo.containerId}`);
 
                 try {
-                    await this.waitForContainer(containerInfo);
+                    await this.#waitForContainer(containerInfo);
                     console.log(`Container ${containerInfo.containerName} is ready`);
                     resolve();
                 } catch (err) {
-                    reject(new Error(`Container failed to become ready: ${err.message}`));
+                    // Propagera InvalidGeneratedCodeError direkt
+                    if (err instanceof InvalidGeneratedCodeError) {
+                        reject(err);
+                    } else {
+                        reject(new Error(`Container failed to become ready: ${err.message}`));
+                    }
                 }
             });
         });
     }
 
-    async waitForContainer(containerInfo) {
+    async #waitForContainer(containerInfo) {
         const maxRetries = 30; // Max antal försök
         const retryDelay = 1000; // 1 sekund mellan varje försök
         
@@ -425,6 +430,31 @@ CMD ["node", "server.js"]
             try {
                 console.log(`[ContainerClient] Waiting for container to be ready (attempt ${i + 1}/${maxRetries})`);
                 
+                // Kolla om containern fortfarande finns
+                const containerExists = await new Promise((resolve, reject) => {
+                    const ps = spawn('docker', ['ps', '-a', '--filter', `id=${containerInfo.containerId}`, '--format', '{{.ID}}']);
+                    let output = '';
+                    let error = '';
+                    ps.stdout.on('data', (data) => output += data.toString());
+                    ps.stderr.on('data', (data) => error += data.toString());
+                    ps.on('close', (code) => {
+                        if (code !== 0) {
+                            reject(new Error(`Failed to check container existence: ${error}`));
+                        } else {
+                            resolve(output.trim() !== '');
+                        }
+                    });
+                });
+
+                if (!containerExists) {
+                    // Om containern inte finns, kasta InvalidGeneratedCodeError direkt
+                    throw new InvalidGeneratedCodeError(
+                        'Container crashed due to invalid generated code',
+                        containerInfo.sourceCode,
+                        'Container was removed before logs could be retrieved'
+                    );
+                }
+
                 // Kolla om containern kör
                 const inspect = await new Promise((resolve, reject) => {
                     const inspect = spawn('docker', ['inspect', containerInfo.containerId]);
@@ -471,39 +501,39 @@ CMD ["node", "server.js"]
                             throw new Error(`Container is not running (status: ${state.Status})`);
                         }
                     }
-                } else {
-                    console.log(`[ContainerClient] Container status: ${state.Status || 'unknown'}`);
-                    if (state.Status === 'exited') {
-                        // Hämta loggarna för att se varför containern avslutades
-                        const logs = await new Promise((resolve, reject) => {
-                            const logs = spawn('docker', ['logs', containerInfo.containerId]);
-                            let output = '';
-                            let error = '';
-                            logs.stdout.on('data', (data) => output += data.toString());
-                            logs.stderr.on('data', (data) => error += data.toString());
-                            logs.on('close', (code) => {
-                                if (code !== 0) {
-                                    reject(new Error(`Failed to get container logs: ${error}`));
-                                } else {
-                                    resolve(output);
-                                }
-                            });
+                } else if (state.Status === 'exited' || state.Status === 'removing') {
+                    // Om containern har avslutats eller håller på att tas bort, hämta loggarna direkt
+                    const logs = await new Promise((resolve, reject) => {
+                        const logs = spawn('docker', ['logs', containerInfo.containerId]);
+                        let output = '';
+                        let error = '';
+                        logs.stdout.on('data', (data) => output += data.toString());
+                        logs.stderr.on('data', (data) => error += data.toString());
+                        logs.on('close', (code) => {
+                            if (code !== 0) {
+                                reject(new Error(`Failed to get container logs: ${error}`));
+                            } else {
+                                resolve(output);
+                            }
                         });
-                        console.error(`[ContainerClient] Container exited. Logs:\n${logs}`);
-                        
-                        // Kasta InvalidGeneratedCodeError med loggarna och källkoden
-                        throw new InvalidGeneratedCodeError(
-                            'Container crashed due to invalid generated code',
-                            containerInfo.sourceCode,
-                            logs
-                        );
-                    }
+                    });
+                    console.error(`[ContainerClient] Container ${state.Status}. Logs:\n${logs}`);
+                    
+                    throw new InvalidGeneratedCodeError(
+                        'Container crashed due to invalid generated code',
+                        containerInfo.sourceCode,
+                        logs
+                    );
                 }
             } catch (err) {
                 console.log(`[ContainerClient] Container check failed (attempt ${i + 1}):`, err.message);
+                // Om felet är InvalidGeneratedCodeError eller containern inte finns, kasta felet direkt
+                if (err instanceof InvalidGeneratedCodeError || err.message.includes('Container was removed')) {
+                    throw err;
+                }
                 // Om det är sista försöket, kasta felet
                 if (i === maxRetries - 1) {
-                    throw err; // Låt det ursprungliga felet propagera
+                    throw err;
                 }
             }
 
@@ -515,7 +545,7 @@ CMD ["node", "server.js"]
         throw new Error('Container failed to become ready in time');
     }
 
-    async runContainer(containerInfo, input) {
+    async #runContainer(containerInfo, input) {
         console.log(`Running function in container ${containerInfo.containerName} on port ${containerInfo.port}`);
         console.log('Input:', JSON.stringify(input, null, 2));
         
@@ -535,11 +565,20 @@ CMD ["node", "server.js"]
             return response.data;
         } catch (error) {
             console.error('Error running function:', error.message);
-            if (error.response) {
-                console.error('Response error:', error.response.data);
-            } else if (error.request) {
-                console.error('No response received:', error.request);
+            
+            // Hantera runtime-fel från containern (500-svar med felmeddelande)
+            if (error.response && error.response.status === 500) {
+                console.log('Container returned runtime error:', error.response.data);
+                return error.response.data;
             }
+            
+            // Hantera nätverksfel eller andra infrastrukturproblem
+            if (error.request) {
+                console.error('No response received:', error.request);
+                throw new Error('No response received from container');
+            }
+            
+            // Hantera andra fel
             throw new Error(`Failed to execute function: ${error.message}`);
         }
     }
@@ -549,7 +588,7 @@ CMD ["node", "server.js"]
         
         try {
             // Försök hämta container-information
-            const containerInfo = await this.getContainer(functionId);
+            const containerInfo = await this.#getContainer(functionId);
             if (!containerInfo) {
                 console.log(`[ContainerClient] No container found for function ${functionId}`);
                 return;
@@ -609,7 +648,7 @@ CMD ["node", "server.js"]
 
             // Ta bort container-informationen
             console.log(`[ContainerClient] Removing container info for function ${functionId}`);
-            await this.removeContainerInfo(functionId);
+            await this.#removeContainerInfo(functionId);
             
             console.log(`[ContainerClient] Successfully completed container removal for function ${functionId}`);
         } catch (error) {
@@ -619,7 +658,7 @@ CMD ["node", "server.js"]
     }
 
     async execute(sourceCode, functionId, input) {
-        let containerInfo = await this.getContainer(functionId);
+        let containerInfo = await this.#getContainer(functionId);
         
         // Om containern inte finns eller har ändrad källkod, skapa en ny
         if (!containerInfo || containerInfo.sourceCode !== sourceCode) {
@@ -627,11 +666,11 @@ CMD ["node", "server.js"]
             if (containerInfo) {
                 await this.removeContainer(functionId);
             }
-            containerInfo = await this.createContainer(sourceCode, functionId);
+            containerInfo = await this.#createContainer(sourceCode, functionId);
             containerInfo.sourceCode = sourceCode; // Spara källkoden för framtida jämförelser
         }
         
-        return await this.runContainer(containerInfo, input);
+        return await this.#runContainer(containerInfo, input);
     }
 }
 
