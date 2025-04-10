@@ -11,3 +11,8 @@ Koden är på en enda rad
 Verkar som att funktionen ändå laddas om
 
 No feedback for programming errors!
+
+
+Error handling in the generated code 
+
+När en funktion tas bort skall vi återvända till funktionssidan och sidan med funktioner skall laddas om 
