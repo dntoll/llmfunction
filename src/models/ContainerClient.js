@@ -114,6 +114,50 @@ class ContainerClient {
         }
     }
 
+    async #findAvailablePort() {
+        // Läs alla container-filer för att se vilka portar som används
+        const usedPorts = new Set();
+        try {
+            const files = await fs.readdir(this.containersDir);
+            for (const file of files) {
+                if (file.endsWith('.json')) {
+                    const data = await fs.readFile(path.join(this.containersDir, file), 'utf8');
+                    const containerInfo = JSON.parse(data);
+                    if (containerInfo.port) {
+                        usedPorts.add(containerInfo.port);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to read container files:', error);
+        }
+
+        // Hitta första lediga porten från 3001 och uppåt
+        let port = 3001;
+        while (port < 65535) {
+            if (!usedPorts.has(port)) {
+                // Kolla om porten faktiskt är ledig
+                const isPortAvailable = await new Promise((resolve) => {
+                    const check = spawn('netstat', ['-an', '|', 'findstr', `:${port}`]);
+                    let output = '';
+                    let error = '';
+                    check.stdout.on('data', (data) => output += data.toString());
+                    check.stderr.on('data', (data) => error += data.toString());
+                    check.on('close', (code) => {
+                        // Om porten inte hittas (code !== 0) är den ledig
+                        resolve(code !== 0);
+                    });
+                });
+                
+                if (isPortAvailable) {
+                    return port;
+                }
+            }
+            port++;
+        }
+        throw new Error('No available ports found');
+    }
+
     async #createContainer(sourceCode, functionId) {
         console.log(`[ContainerClient] Creating container for function ${functionId}`);
         
@@ -130,37 +174,9 @@ class ContainerClient {
             await this.removeContainer(functionId);
         }
 
-        // Hitta en ledig port
-        const findAvailablePort = async (startPort) => {
-            let port = startPort;
-            while (port < 65535) {
-                try {
-                    // Kolla om porten är använd
-                    const checkPort = await new Promise((resolve) => {
-                        const check = spawn('netstat', ['-ano']);
-                        let output = '';
-                        check.stdout.on('data', (data) => output += data.toString());
-                        check.on('close', () => {
-                            resolve(!output.includes(`:${port}`));
-                        });
-                    });
-                    
-                    if (checkPort) {
-                        return port;
-                    }
-                    port++;
-                } catch (error) {
-                    console.error(`[ContainerClient] Error checking port ${port}:`, error);
-                    port++;
-                }
-            }
-            throw new Error('No available ports found');
-        };
-
         // Skapa ett unikt namn för containern
         const containerName = `function-${functionId}`;
-        const port = await findAvailablePort(this.portCounter);
-        this.portCounter = port + 1; // Uppdatera portCounter för nästa container
+        const port = await this.#findAvailablePort();
 
         // Skapa en temporär mapp för containern
         const tempDir = path.join(process.cwd(), 'temp', functionId);

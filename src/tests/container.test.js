@@ -33,7 +33,7 @@ describe('Container Tests', () => {
             .rejects
             .toThrow(InvalidGeneratedCodeError);
     }, 60000);
-/*
+
     test('3. hanterar runtime-fel och returnerar felmeddelande', async () => {
         const sourceCode = `
         if (!input.a || !input.b) {
@@ -44,10 +44,14 @@ describe('Container Tests', () => {
         };`;
 
         // Testa med felaktig input
-        const response = await codeRunner.execute(sourceCode, testIdentifier, { a: 5 });
+        let response = await codeRunner.execute(sourceCode, testIdentifier, { a: 5 });
         
         // Vi förväntar oss att få tillbaka ett felobjekt med felmeddelandet
         expect(response).toHaveProperty('error');
         expect(response.error).toBe('Båda värdena måste anges');
-    }, 60000);*/
+
+        // se till att funktionen fortfarande finns
+        response = await codeRunner.execute(sourceCode, testIdentifier, { a: 5, b: 5 });
+        expect(response).toEqual({ sum: 10 });
+    }, 60000);
 }); 
