@@ -68,6 +68,16 @@ class APIController {
         if (!data) {
             throw new FunctionNotFoundError(identifier);
         }
+
+        try {
+            // Ta bort containern
+            const containerClient = new ContainerClient();
+            await containerClient.removeContainer(identifier);
+        } catch (error) {
+            console.error('Failed to remove container:', error);
+            // Fortsätt ändå med borttagningen av funktionen
+        }
+
         await this.storageService.removeFunction(identifier);
     }
 

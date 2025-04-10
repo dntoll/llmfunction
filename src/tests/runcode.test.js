@@ -36,12 +36,18 @@ describe('Run functions with code', () => {
             .send({
                 prompt: "add numbers in input",
                 examples: [
-                    { input: { a: 5, b:5 }, output: { sum: 10 } }
+                    { input: { a: 4, b:5 }, output: { sum: 9 } }
                 ]
             });
         expect(response.status).toBe(201);
         runcodeTestIdentifier = response.body.identifier;
     });
+
+    afterEach(async () => {
+        // Rensa upp containern efter varje test
+        await request(app)
+            .delete(`/llmfunction/remove/${runcodeTestIdentifier}`);
+        }, 30000);
 
     test('runs a function with code', async () => {
         const response = await request(app)
