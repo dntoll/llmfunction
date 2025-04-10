@@ -16,3 +16,10 @@ No feedback for programming errors!
 Error handling in the generated code 
 
 När en funktion tas bort skall vi återvända till funktionssidan och sidan med funktioner skall laddas om 
+
+
+dont use the word result in the suggested output JSON
+
+Increase the readability of the code on function
+
+Naming of code
