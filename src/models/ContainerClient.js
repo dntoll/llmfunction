@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const axios = require('axios');
+const { InvalidGeneratedCodeError } = require('../errors/FunctionErrors');
 
 class ContainerClient {
     constructor(dockerImage = 'node:18-slim') {
@@ -114,22 +115,52 @@ class ContainerClient {
     }
 
     async createContainer(sourceCode, functionId) {
+        console.log(`[ContainerClient] Creating container for function ${functionId}`);
+        
         // Kolla om containern redan finns och kör
         let containerInfo = await this.getContainer(functionId);
         
         // Om containern finns och kör, kolla om källkoden har ändrats
         if (containerInfo) {
             if (containerInfo.sourceCode === sourceCode) {
-                console.log(`Reusing existing container for function ${functionId}`);
+                console.log(`[ContainerClient] Reusing existing container for function ${functionId}`);
                 return containerInfo;
             }
-            console.log(`Source code changed for function ${functionId}, removing old container`);
+            console.log(`[ContainerClient] Source code changed for function ${functionId}, removing old container`);
             await this.removeContainer(functionId);
         }
 
+        // Hitta en ledig port
+        const findAvailablePort = async (startPort) => {
+            let port = startPort;
+            while (port < 65535) {
+                try {
+                    // Kolla om porten är använd
+                    const checkPort = await new Promise((resolve) => {
+                        const check = spawn('netstat', ['-ano']);
+                        let output = '';
+                        check.stdout.on('data', (data) => output += data.toString());
+                        check.on('close', () => {
+                            resolve(!output.includes(`:${port}`));
+                        });
+                    });
+                    
+                    if (checkPort) {
+                        return port;
+                    }
+                    port++;
+                } catch (error) {
+                    console.error(`[ContainerClient] Error checking port ${port}:`, error);
+                    port++;
+                }
+            }
+            throw new Error('No available ports found');
+        };
+
         // Skapa ett unikt namn för containern
         const containerName = `function-${functionId}`;
-        const port = this.portCounter++;
+        const port = await findAvailablePort(this.portCounter);
+        this.portCounter = port + 1; // Uppdatera portCounter för nästa container
 
         // Skapa en temporär mapp för containern
         const tempDir = path.join(process.cwd(), 'temp', functionId);
@@ -267,27 +298,34 @@ CMD ["node", "server.js"]
         try {
             // Spara container-informationen till fil INNAN vi försöker starta containern
             await this.saveContainerInfo(functionId, containerInfo);
-            console.log(`Saved container info to file before starting container for function ${functionId}`);
+            console.log(`[ContainerClient] Saved container info to file before starting container for function ${functionId}`);
 
+            // Bygg och starta containern
+            console.log(`[ContainerClient] Building image for function ${functionId}`);
             await this.buildImage(containerInfo);
+            
+            console.log(`[ContainerClient] Starting container for function ${functionId}`);
             await this.startContainer(containerInfo);
-            console.log(`Created and started container for function ${functionId}`);
+            
+            console.log(`[ContainerClient] Container started successfully for function ${functionId}`);
 
             // Vänta lite extra för att vara säker på att containern är redo
-            console.log('Waiting for container to be fully ready...');
+            console.log('[ContainerClient] Waiting for container to be fully ready...');
             await new Promise(resolve => setTimeout(resolve, 2000));
             
             // Gör ett test-anrop för att verifiera att containern svarar
             try {
+                console.log(`[ContainerClient] Testing health endpoint at http://localhost:${containerInfo.port}/health`);
                 await axios.get(`http://localhost:${containerInfo.port}/health`);
-                console.log('Container verified and ready to accept requests');
+                console.log('[ContainerClient] Container verified and ready to accept requests');
             } catch (err) {
+                console.error('[ContainerClient] Container health check failed:', err.message);
                 throw new Error('Container is not responding to health checks');
             }
 
             return containerInfo;
         } catch (error) {
-            console.error('Failed to create container:', error);
+            console.error('[ContainerClient] Failed to create container:', error);
             // Om containern misslyckas, ta bort container-informationen
             await this.removeContainerInfo(functionId);
             throw error;
@@ -295,6 +333,7 @@ CMD ["node", "server.js"]
     }
 
     async buildImage(containerInfo) {
+        console.log(`[ContainerClient] Building Docker image for function ${containerInfo.id}`);
         return new Promise((resolve, reject) => {
             const build = spawn('docker', [
                 'build',
@@ -306,18 +345,26 @@ CMD ["node", "server.js"]
             let buildError = '';
 
             build.stdout.on('data', (data) => {
-                buildOutput += data.toString();
+                const output = data.toString();
+                buildOutput += output;
+                console.log(`[ContainerClient] Build output: ${output.trim()}`);
             });
 
             build.stderr.on('data', (data) => {
-                buildError += data.toString();
+                const error = data.toString();
+                buildError += error;
+                console.error(`[ContainerClient] Build error: ${error.trim()}`);
             });
 
             build.on('close', (code) => {
                 if (code !== 0) {
+                    console.error(`[ContainerClient] Docker build failed with code ${code}`);
+                    console.error(`[ContainerClient] Build output: ${buildOutput}`);
+                    console.error(`[ContainerClient] Build error: ${buildError}`);
                     reject(new Error(`Docker build failed with code ${code}\nOutput: ${buildOutput}\nError: ${buildError}`));
                     return;
                 }
+                console.log(`[ContainerClient] Docker image built successfully: ${containerInfo.imageName}`);
                 resolve();
             });
         });
@@ -376,47 +423,92 @@ CMD ["node", "server.js"]
         
         for (let i = 0; i < maxRetries; i++) {
             try {
-                console.log(`Waiting for container to be ready (attempt ${i + 1}/${maxRetries})`);
+                console.log(`[ContainerClient] Waiting for container to be ready (attempt ${i + 1}/${maxRetries})`);
                 
                 // Kolla om containern kör
                 const inspect = await new Promise((resolve, reject) => {
                     const inspect = spawn('docker', ['inspect', containerInfo.containerId]);
                     let output = '';
-                    inspect.stdout.on('data', (data) => output += data);
+                    let error = '';
+                    inspect.stdout.on('data', (data) => output += data.toString());
+                    inspect.stderr.on('data', (data) => error += data.toString());
                     inspect.on('close', (code) => {
-                        if (code === 0) {
-                            resolve(JSON.parse(output));
+                        if (code !== 0) {
+                            console.error(`[ContainerClient] Failed to inspect container: ${error}`);
+                            reject(new Error(`Failed to inspect container: ${error}`));
                         } else {
-                            reject(new Error('Failed to inspect container'));
+                            try {
+                                resolve(JSON.parse(output));
+                            } catch (err) {
+                                reject(new Error(`Failed to parse container info: ${err.message}`));
+                            }
                         }
                     });
                 });
 
                 // Kolla om containern är "running"
                 const state = inspect[0]?.State;
-                if (state?.Status === 'running') {
+                if (!state) {
+                    console.log(`[ContainerClient] No state information available for container`);
+                    throw new Error('Container state not available');
+                }
+
+                if (state.Status === 'running') {
                     // Försök göra ett test-anrop till health endpoint
                     try {
-                        console.log(`Testing health endpoint at http://localhost:${containerInfo.port}/health`);
+                        console.log(`[ContainerClient] Testing health endpoint at http://localhost:${containerInfo.port}/health`);
                         const response = await axios.get(`http://localhost:${containerInfo.port}/health`, {
                             timeout: 5000 // 5 sekunders timeout
                         });
                         if (response.status === 200) {
-                            console.log('Container is ready and responding to health checks');
+                            console.log('[ContainerClient] Container is ready and responding to health checks');
                             return;
                         }
                     } catch (err) {
-                        console.log(`Health check failed (attempt ${i + 1}):`, err.message);
+                        console.log(`[ContainerClient] Health check failed (attempt ${i + 1}):`, err.message);
+                        // Om containern inte svarar, kolla om den fortfarande kör
+                        if (state.Status !== 'running') {
+                            throw new Error(`Container is not running (status: ${state.Status})`);
+                        }
                     }
                 } else {
-                    console.log(`Container status: ${state?.Status || 'unknown'}`);
+                    console.log(`[ContainerClient] Container status: ${state.Status || 'unknown'}`);
+                    if (state.Status === 'exited') {
+                        // Hämta loggarna för att se varför containern avslutades
+                        const logs = await new Promise((resolve, reject) => {
+                            const logs = spawn('docker', ['logs', containerInfo.containerId]);
+                            let output = '';
+                            let error = '';
+                            logs.stdout.on('data', (data) => output += data.toString());
+                            logs.stderr.on('data', (data) => error += data.toString());
+                            logs.on('close', (code) => {
+                                if (code !== 0) {
+                                    reject(new Error(`Failed to get container logs: ${error}`));
+                                } else {
+                                    resolve(output);
+                                }
+                            });
+                        });
+                        console.error(`[ContainerClient] Container exited. Logs:\n${logs}`);
+                        
+                        // Kasta InvalidGeneratedCodeError med loggarna och källkoden
+                        throw new InvalidGeneratedCodeError(
+                            'Container crashed due to invalid generated code',
+                            containerInfo.sourceCode,
+                            logs
+                        );
+                    }
                 }
             } catch (err) {
-                console.log(`Container check failed (attempt ${i + 1}):`, err.message);
+                console.log(`[ContainerClient] Container check failed (attempt ${i + 1}):`, err.message);
+                // Om det är sista försöket, kasta felet
+                if (i === maxRetries - 1) {
+                    throw err; // Låt det ursprungliga felet propagera
+                }
             }
 
             // Vänta innan nästa försök
-            console.log(`Waiting ${retryDelay}ms before next attempt...`);
+            console.log(`[ContainerClient] Waiting ${retryDelay}ms before next attempt...`);
             await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
 

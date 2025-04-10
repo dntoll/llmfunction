@@ -25,9 +25,18 @@ class FunctionExecutionError extends FunctionError {
     }
 }
 
+class InvalidGeneratedCodeError extends FunctionError {
+    constructor(message, generatedCode, containerLogs) {
+        super(message);
+        this.generatedCode = generatedCode;
+        this.containerLogs = containerLogs;
+    }
+}
+
 module.exports = {
     FunctionError,
     FunctionNotFoundError,
     FunctionValidationError,
-    FunctionExecutionError
+    FunctionExecutionError,
+    InvalidGeneratedCodeError
 }; 

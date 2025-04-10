@@ -31,6 +31,7 @@ class CodeRunner {
         Code should try to implement generic code that can be used for any input and not just the example input. Avoid using the example input in the code.
         The result should be a const variable called "result" as in the example code. Even if there is a result variable in the json output.
         The example code needs indentation and newlines, please note that it should still be a part of a valid json object.
+        IMPORTANT: Do not try to modify the result object while it is being created. First create the object, then modify it in separate statements.
         `;
 
         const exampleCode = {

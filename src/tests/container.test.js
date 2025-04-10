@@ -12,7 +12,7 @@ describe('Container Tests', () => {
 
     afterAll(async () => {
         await codeRunner.cleanup(testIdentifier);
-    });
+    }, 30000);
 
     test('runs a function with code', async () => {
         const sourceCode = `const result = {
