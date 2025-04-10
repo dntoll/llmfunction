@@ -10,4 +10,4 @@ Koden är på en enda rad
 
 Verkar som att funktionen ändå laddas om
 
-
+No feedback for programming errors!

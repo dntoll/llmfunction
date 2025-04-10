@@ -36,6 +36,11 @@ class LLMFunction {
         this.generatedCode = null; // Lagrar genererad kod
     }
 
+    clearGeneratedCode() {
+        this.generatedCode = null;
+        this.testResults = null;
+    }
+
     static fromJSON(data) {
         const llmFunction = new LLMFunction(data.prompt, data.examples);
      

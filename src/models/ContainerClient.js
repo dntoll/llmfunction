@@ -12,6 +12,7 @@ class ContainerClient {
         this.networkName = 'llmfunction-network';
         this.initializeContainersDir();
         this.initializeNetwork();
+        console.log('ContainerClient initialized');
     }
 
     async initializeContainersDir() {
@@ -63,36 +64,50 @@ class ContainerClient {
     }
 
     async getContainer(functionId) {
+        console.log(`[ContainerClient] Getting container info for function ${functionId}`);
+        
         // Försök ladda container-information från fil
         const containerInfo = await this.loadContainerInfo(functionId);
-        if (!containerInfo) return null;
+        if (!containerInfo) {
+            console.log(`[ContainerClient] No container info found in file for function ${functionId}`);
+            return null;
+        }
+
+        console.log(`[ContainerClient] Found container info in file:`, containerInfo);
 
         // Kolla med Docker om containern fortfarande kör
         try {
+            console.log(`[ContainerClient] Checking if container is running: function-${functionId}`);
             const inspect = await new Promise((resolve, reject) => {
                 const inspect = spawn('docker', ['ps', '--filter', `name=function-${functionId}`, '--format', '{{.ID}}']);
                 let output = '';
-                inspect.stdout.on('data', (data) => output += data);
+                let error = '';
+                inspect.stdout.on('data', (data) => output += data.toString());
+                inspect.stderr.on('data', (data) => error += data.toString());
                 inspect.on('close', (code) => {
-                    if (code === 0) {
-                        resolve(output.trim());
+                    if (code !== 0) {
+                        console.error(`[ContainerClient] Failed to inspect container: ${error}`);
+                        reject(new Error(`Failed to inspect container: ${error}`));
                     } else {
-                        reject(new Error('Failed to inspect container'));
+                        resolve(output.trim());
                     }
                 });
             });
 
             // Om containern inte hittades, ta bort container-informationen
             if (!inspect) {
+                console.log(`[ContainerClient] Container not running, removing container info`);
                 await this.removeContainerInfo(functionId);
                 return null;
             }
+
+            console.log(`[ContainerClient] Container is running with ID: ${inspect}`);
 
             // Uppdatera containerId om den har ändrats
             containerInfo.containerId = inspect;
             return containerInfo;
         } catch (error) {
-            console.error('Error checking container status:', error);
+            console.error(`[ContainerClient] Error checking container status:`, error);
             await this.removeContainerInfo(functionId);
             return null;
         }
@@ -438,32 +453,77 @@ CMD ["node", "server.js"]
     }
 
     async removeContainer(functionId) {
-        const containerInfo = await this.getContainer(functionId);
-        if (!containerInfo) return;
-
-        // Stoppa den körande containern
-        if (containerInfo.containerId) {
-            await new Promise((resolve) => {
-                const stop = spawn('docker', ['stop', containerInfo.containerName]);
-                stop.on('close', resolve);
-            });
-        }
-
-        // Ta bort Docker-imagen
-        await new Promise((resolve) => {
-            const remove = spawn('docker', ['rmi', '-f', containerInfo.imageName]);
-            remove.on('close', resolve);
-        });
-
-        // Ta bort temporär mapp
+        console.log(`[ContainerClient] Starting container removal for function ${functionId}`);
+        
         try {
-            await fs.rm(containerInfo.tempDir, { recursive: true, force: true });
-        } catch (error) {
-            console.error('Failed to cleanup temporary directory:', error);
-        }
+            // Försök hämta container-information
+            const containerInfo = await this.getContainer(functionId);
+            if (!containerInfo) {
+                console.log(`[ContainerClient] No container found for function ${functionId}`);
+                return;
+            }
 
-        // Ta bort container-informationen
-        await this.removeContainerInfo(functionId);
+            console.log(`[ContainerClient] Found container info:`, {
+                containerId: containerInfo.containerId,
+                containerName: containerInfo.containerName,
+                imageName: containerInfo.imageName
+            });
+
+            // Stoppa containern om den kör
+            if (containerInfo.containerId) {
+                console.log(`[ContainerClient] Stopping container ${containerInfo.containerId}`);
+                await new Promise((resolve, reject) => {
+                    const stop = spawn('docker', ['stop', containerInfo.containerName]);
+                    let error = '';
+                    stop.stderr.on('data', (data) => error += data.toString());
+                    stop.on('close', (code) => {
+                        if (code !== 0) {
+                            console.error(`[ContainerClient] Failed to stop container: ${error}`);
+                            reject(new Error(`Failed to stop container: ${error}`));
+                        } else {
+                            console.log(`[ContainerClient] Successfully stopped container ${containerInfo.containerId}`);
+                            resolve();
+                        }
+                    });
+                });
+            }
+
+            // Ta bort Docker-imagen
+            console.log(`[ContainerClient] Removing image ${containerInfo.imageName}`);
+            await new Promise((resolve, reject) => {
+                const remove = spawn('docker', ['rmi', '-f', containerInfo.imageName]);
+                let error = '';
+                remove.stderr.on('data', (data) => error += data.toString());
+                remove.on('close', (code) => {
+                    if (code !== 0) {
+                        console.error(`[ContainerClient] Failed to remove image: ${error}`);
+                        reject(new Error(`Failed to remove image: ${error}`));
+                    } else {
+                        console.log(`[ContainerClient] Successfully removed image ${containerInfo.imageName}`);
+                        resolve();
+                    }
+                });
+            });
+
+            // Ta bort temporär mapp
+            try {
+                console.log(`[ContainerClient] Removing temporary directory ${containerInfo.tempDir}`);
+                await fs.rm(containerInfo.tempDir, { recursive: true, force: true });
+                console.log(`[ContainerClient] Successfully removed temporary directory`);
+            } catch (error) {
+                console.error(`[ContainerClient] Failed to cleanup temporary directory:`, error);
+                throw error;
+            }
+
+            // Ta bort container-informationen
+            console.log(`[ContainerClient] Removing container info for function ${functionId}`);
+            await this.removeContainerInfo(functionId);
+            
+            console.log(`[ContainerClient] Successfully completed container removal for function ${functionId}`);
+        } catch (error) {
+            console.error(`[ContainerClient] Error during container removal:`, error);
+            throw error;
+        }
     }
 
     async execute(sourceCode, functionId, input) {

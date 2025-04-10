@@ -1,6 +1,7 @@
 const LLMFunction = require('../models/LLMFunction');
 const StorageService = require('../services/StorageService');
 const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
+const ContainerClient = require('../models/ContainerClient');
 
 class APIController {
     constructor(mockache = null) {
@@ -297,9 +298,30 @@ class APIController {
         }
 
         const llmFunction = LLMFunction.fromJSON(data);
+        
+        // Rensa genererad kod och containrar om prompten ändras
+        if (llmFunction.prompt !== newPrompt) {
+            console.log('Clearing generated code and removing container for function:', identifier);
+            llmFunction.clearGeneratedCode();
+            console.log('Cleared generated code');
+            
+            try {
+                // Ta bort containern med rätt identifier
+                const containerClient = new ContainerClient();
+                console.log('ContainerClient created');
+            
+                console.log('Remove the container')
+                await containerClient.removeContainer(identifier);
+                console.log('Successfully removed container for function:', identifier);
+            } catch (error) {
+                console.error('Failed to remove container:', error);
+                // Fortsätt ändå med uppdateringen av prompten
+            }
+        }
+        
         llmFunction.prompt = newPrompt;
         llmFunction.clearTestResults();
-
+        
         await this.storageService.saveFunction(llmFunction.identifier, llmFunction.toJSON());
         
         return {

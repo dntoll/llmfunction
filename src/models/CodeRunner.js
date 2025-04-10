@@ -15,19 +15,20 @@ class CodeRunner {
         
         Prompt: ${prompt}
         
-        Input format: ${JSON.stringify(examples[0].input)}
-        Output format: ${JSON.stringify(examples[0].output)}
+        Input example format: ${JSON.stringify(examples[0].input)}
+        Output example format: ${JSON.stringify(examples[0].output)}
         
         The code should:
-        1. Use the 'input' variable that contains the input object
-        2. Calculate the result and store it in a variable named 'result'
-        3. The result variable should match the structure of Example Output
+        1. Use the 'input' variable that contains the input object as in the input example format
+        2. Calculate the result and store it in a variable named 'result' as in the example code
+        3. The result variable content should match the structure of Example Output
         
         Generate only the JavaScript code, no explanations or markdown.
-        The code should be a simple calculation that uses the input variable and creates a result variable.
+        The code should be a generic calculation that uses the input variable and creates a result variable. 
         Do not include any input parsing or output formatting - that is already handled.
         Do not include any console.log statements or other output formatting.
         Do not include any error handling or try-catch blocks.
+        Code should try to implement generic code that can be used for any input and not just the example input. Avoid using the example input in the code.
         The result should be a const variable called "result" as in the example code. Even if there is a result variable in the json output.
         The example code needs indentation and newlines, please note that it should still be a part of a valid json object.
         `;
