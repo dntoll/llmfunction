@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { FunctionNotFoundError, FunctionValidationError, FunctionExecutionError } = require('../errors/FunctionErrors');
 
-// Gemensam felhanteringsfunktion
+//** All the routes must have tests!** If you add a new route, you must also add a test for it.
+//all code and comments must be in english.
+
+// Common error handling function
 const handleError = (error, res) => {
     //console.error('Error in route handler:', error);
     
@@ -17,7 +20,7 @@ const handleError = (error, res) => {
     }
 };
 
-// Valideringsfunktion för request body
+// Validation function for request body
 const validateRequestBody = (req, res, next) => {
     if (!req.body || typeof req.body !== 'object') {
         return res.status(400).json({ error: 'Invalid request body' });

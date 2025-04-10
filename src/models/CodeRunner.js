@@ -29,6 +29,7 @@ class CodeRunner {
         Do not include any console.log statements or other output formatting.
         Do not include any error handling or try-catch blocks.
         The result should be a const variable called "result" as in the example code. Even if there is a result variable in the json output.
+        The example code needs indentation and newlines, please note that it should still be a part of a valid json object.
         `;
 
         const exampleCode = {
